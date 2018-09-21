@@ -5,15 +5,18 @@ add_compile_options(-std=c++11 -Wall -Wextra)
 
 find_package(catkin REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS
     include
     ${CERES_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
   LIBRARIES
     ${PROJECT_NAME}
   DEPENDS
     CERES
+    EIGEN3
 )
 
 ###########
