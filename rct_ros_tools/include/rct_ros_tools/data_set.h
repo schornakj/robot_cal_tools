@@ -16,6 +16,7 @@ struct ExtrinsicDataSet
   std::vector<Eigen::Affine3d> tool_poses;
 };
 
+
 boost::optional<ExtrinsicDataSet> parseFromFile(const std::string& path);
 
 bool saveToDirectory(const std::string& path, const ExtrinsicDataSet& data);

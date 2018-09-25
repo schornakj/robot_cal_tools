@@ -40,6 +40,7 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/extrinsic_multi_static_camera_wrist_only.cpp
   # Optimizations (3D sensor)
   src/${PROJECT_NAME}/extrinsic_3d_camera_on_wrist.cpp
+  src/${PROJECT_NAME}/extrinsic_3d_camera_cartesian_gantry.cpp
   # Optimizations (Experimental) - Intrinsic
   src/${PROJECT_NAME}/camera_intrinsic.cpp
   src/${PROJECT_NAME}/pnp.cpp
