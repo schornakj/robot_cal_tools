@@ -48,6 +48,7 @@ struct Extrinsic3DCameraGantryResult
 
 Extrinsic3DCameraGantryResult optimize(const Extrinsic3DCameraGantryProblem& params);
 
+void checkSanity();
 }
 
 #endif // EXTRINSIC_3D_CAMERA_CARTESIAN_GANTRY_H
