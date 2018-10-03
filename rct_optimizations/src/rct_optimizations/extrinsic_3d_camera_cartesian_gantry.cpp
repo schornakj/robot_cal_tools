@@ -39,7 +39,7 @@ public:
   bool operator()(const T* transform_axis_misalignment, const T* transform_wrist_to_camera, const T* transform_base_to_target, T* residual) const
   {
     const T* camera_angle_axis = transform_wrist_to_camera + 0;
-    const T* camera_position = pose_wrist_to_camera + 3;
+    const T* camera_position = transform_wrist_to_camera + 3;
 
     const T* target_angle_axis = transform_base_to_target + 0;
     const T* target_position = transform_base_to_target + 3;
