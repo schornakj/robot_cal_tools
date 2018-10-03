@@ -39,7 +39,7 @@ public:
   bool operator()(const T* transform_axis_misalignment, const T* transform_wrist_to_camera, const T* transform_base_to_target, T* residual) const
   {
     const T* camera_angle_axis = transform_wrist_to_camera + 0;
-//    const T* camera_position = pose_wrist_to_camera + 3;
+    const T* camera_position = pose_wrist_to_camera + 3;
 
     const T* target_angle_axis = transform_base_to_target + 0;
     const T* target_position = transform_base_to_target + 3;
@@ -70,8 +70,8 @@ public:
 
     // Then from intermediate frame into camera frame
     poseTransformPoint(pose_y_axis_to_x_axis_, y_axis_base_point, wrist_point);
-//    transformPoint(camera_angle_axis, camera_position, wrist_point, camera_point);
-    ceres::AngleAxisRotatePoint(camera_angle_axis, wrist_point, camera_point);
+    transformPoint(camera_angle_axis, camera_position, wrist_point, camera_point);
+//    ceres::AngleAxisRotatePoint(camera_angle_axis, wrist_point, camera_point);
 
     poseTransformPoint(pose_x_axis_to_world_inv_, camera_point, y_axis_point_undistorted);
     poseTransformPoint(pose_y_axis_to_x_axis_inv_, y_axis_point_undistorted, world_point_undistorted);
