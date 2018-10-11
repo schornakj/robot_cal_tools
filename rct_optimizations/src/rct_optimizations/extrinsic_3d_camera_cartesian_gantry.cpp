@@ -39,13 +39,13 @@ public:
   bool operator()(const T* transform_axis_misalignment, const T* transform_wrist_to_camera, const T* transform_base_to_target, T* residual) const
   {
     const T* camera_angle_axis = transform_wrist_to_camera + 0;
-//    const T* camera_position = pose_wrist_to_camera + 3;
+    const T* camera_position = transform_wrist_to_camera + 3;
 
     const T* target_angle_axis = transform_base_to_target + 0;
     const T* target_position = transform_base_to_target + 3;
 
     const T* misalignment_angle_axis = transform_axis_misalignment + 0;
-//    const T* misalignment_position = pose_axis_misalignment + 3;
+    const T* misalignment_position = transform_axis_misalignment + 3;
 
     T world_point[3];  // Point in world coordinates
     T x_axis_point[3];    // Point in x-axis-relative coordinates
@@ -65,13 +65,15 @@ public:
 
     // Need to transform point from world into intermediate frame
     poseTransformPoint(pose_x_axis_to_world_, world_point, x_axis_point);
-//    transformPoint(misalignment_angle_axis, misalignment_position, x_axis_point, y_axis_base_point);
-    ceres::AngleAxisRotatePoint(misalignment_angle_axis, x_axis_point, y_axis_base_point);
+
+    transformPoint(misalignment_angle_axis, misalignment_position, x_axis_point, y_axis_base_point);
+//    ceres::AngleAxisRotatePoint(misalignment_angle_axis, x_axis_point, y_axis_base_point);
 
     // Then from intermediate frame into camera frame
     poseTransformPoint(pose_y_axis_to_x_axis_, y_axis_base_point, wrist_point);
-//    transformPoint(camera_angle_axis, camera_position, wrist_point, camera_point);
-    ceres::AngleAxisRotatePoint(camera_angle_axis, wrist_point, camera_point);
+
+    transformPoint(camera_angle_axis, camera_position, wrist_point, camera_point);
+//    ceres::AngleAxisRotatePoint(camera_angle_axis, wrist_point, camera_point);
 
     poseTransformPoint(pose_x_axis_to_world_inv_, camera_point, y_axis_point_undistorted);
     poseTransformPoint(pose_y_axis_to_x_axis_inv_, y_axis_point_undistorted, world_point_undistorted);
@@ -135,10 +137,10 @@ rct_optimizations::Extrinsic3DCameraGantryResult rct_optimizations::optimize(con
   double total_cost = 0.0;
   std::vector<double> residuals;
   problem.Evaluate(eval_options, &total_cost, &residuals, nullptr, nullptr);
-  for (int i = 0; i < residuals.size(); i+=3)
-  {
-      std::cout << residuals[i] << " " << residuals[i+1] << " " << residuals[i+2] << std::endl;
-  }
+//  for (int i = 0; i < residuals.size(); i+=3)
+//  {
+//      std::cout << residuals[i] << " " << residuals[i+1] << " " << residuals[i+2] << std::endl;
+//  }
 
   ceres::Solver::Options options;
   ceres::Solver::Summary summary;
@@ -209,10 +211,10 @@ void rct_optimizations::checkSanity()
     double total_cost = 0.0;
     std::vector<double> residuals;
     problem.Evaluate(options, &total_cost, &residuals, nullptr, nullptr);
-    for (int i = 0; i < residuals.size(); i++)
-    {
-        std::cout << residuals[i] << std::endl;
-    }
+//    for (int i = 0; i < residuals.size(); i++)
+//    {
+//        std::cout << residuals[i] << std::endl;
+//    }
 //    ceres::Solver::Options options;
 //    ceres::Solver::Summary summary;
 
