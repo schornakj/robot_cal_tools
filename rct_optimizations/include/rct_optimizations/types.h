@@ -2,6 +2,7 @@
 #define RCT_TYPES_H
 
 #include <array>
+#include <map>
 #include <Eigen/Dense>
 
 namespace rct_optimizations
@@ -43,6 +44,21 @@ struct Pose6d
   const double& z() const { return values[5]; }
 };
 
+struct Vec3d
+{
+    Vec3d() = default;
+    Vec3d(std::array<double, 3> l) : values(l) {}
+
+    std::array<double, 3> values;
+
+    double& x() { return values[0]; }
+    double& y() { return values[1]; }
+    double& z() { return values[2]; }
+    const double& x() const { return values[0]; }
+    const double& y() const { return values[1]; }
+    const double& z() const { return values[2]; }
+};
+
 // Useful typedefs shared by calibrations
 struct Correspondence2D3D
 {
@@ -58,8 +74,21 @@ struct Correspondence3D3D
   Eigen::Vector3d in_image;
 };
 
-using Correspondence3DSet = std::vector<Correspondence3D3D>;
+struct CorrespondenceMarker3D3D
+{
+  int id;
+  int index_corner;
+  Eigen::Vector3d in_target;
+  Eigen::Vector3d in_image;
+};
 
+
+
+using Correspondence3DSet = std::vector<Correspondence3D3D>;
+using CorrespondenceMarker3DSet = std::vector<CorrespondenceMarker3D3D>;
+
+// Key is marker ID and corner index. Vector is correction to object point in X, Y, and Z.
+using ObjectPointCorrection3DSet = std::map<std::tuple<int, int>, Eigen::Vector3d>;
 }
 
 #endif

@@ -16,6 +16,16 @@ rct_optimizations::Pose6d rct_optimizations::poseEigenToCal(const Eigen::Affine3
   return p;
 }
 
+rct_optimizations::Vec3d rct_optimizations::vecEigenToCal(const Eigen::Vector3d& vec)
+{
+    Vec3d v;
+    v.x() = vec[0];
+    v.y() = vec[1];
+    v.z() = vec[2];
+    return v;
+}
+
+
 Eigen::Affine3d rct_optimizations::poseCalToEigen(const rct_optimizations::Pose6d& pose)
 {
   Eigen::Affine3d p = Eigen::Affine3d::Identity();
@@ -46,4 +56,10 @@ Eigen::Affine3d rct_optimizations::poseCalToEigen(const rct_optimizations::Pose6
   }
 
   return p;
+}
+
+Eigen::Vector3d rct_optimizations::vecCalToEigen(const Vec3d &vec)
+{
+  Eigen::Vector3d v(vec.x(), vec.y(), vec.z());
+  return v;
 }

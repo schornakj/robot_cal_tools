@@ -28,11 +28,12 @@ struct Extrinsic3DCameraGantryProblem
 {
   std::vector<Eigen::Affine3d> x_axis_poses;
   std::vector<Eigen::Affine3d> y_axis_poses;
-  std::vector<Correspondence3DSet> observations;
+  std::vector<CorrespondenceMarker3DSet> observations;
 
   Eigen::Affine3d base_to_target_guess;
   Eigen::Affine3d axis_misalignment_guess;
   Eigen::Affine3d wrist_to_camera_guess;
+  ObjectPointCorrection3DSet tweaks_guess;
 };
 
 struct Extrinsic3DCameraGantryResult
@@ -44,11 +45,12 @@ struct Extrinsic3DCameraGantryResult
   Eigen::Affine3d base_to_target;
   Eigen::Affine3d axis_misalignment;
   Eigen::Affine3d wrist_to_camera;
+  ObjectPointCorrection3DSet tweaks;
 };
 
 Extrinsic3DCameraGantryResult optimize(const Extrinsic3DCameraGantryProblem& params);
 
-void checkSanity();
+//void checkSanity();
 }
 
 #endif // EXTRINSIC_3D_CAMERA_CARTESIAN_GANTRY_H
