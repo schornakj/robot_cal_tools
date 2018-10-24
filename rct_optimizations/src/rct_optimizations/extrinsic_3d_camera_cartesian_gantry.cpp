@@ -78,9 +78,10 @@ public:
     poseTransformPoint(pose_x_axis_to_world_inv_, camera_point, y_axis_point_undistorted);
     poseTransformPoint(pose_y_axis_to_x_axis_inv_, y_axis_point_undistorted, world_point_undistorted);
 
-    residual[0] = world_point_undistorted[0] - observed_pt_world_.x();
-    residual[1] = world_point_undistorted[1] - observed_pt_world_.y();
-    residual[2] = world_point_undistorted[2] - observed_pt_world_.z();
+    // Cost needs to account for getting the image and object points close together without having the object point deviate too much from its initial position.
+    residual[0] = world_point_undistorted[0] - observed_pt_world_.x() + object_point_tweak[0];
+    residual[1] = world_point_undistorted[1] - observed_pt_world_.y() + object_point_tweak[1];
+    residual[2] = world_point_undistorted[2] - observed_pt_world_.z() + object_point_tweak[2];
 
     return true;
   }
@@ -113,6 +114,8 @@ rct_optimizations::Extrinsic3DCameraGantryResult rct_optimizations::optimize(con
   Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
   Pose6d internal_axis_misalignment = poseEigenToCal(params.axis_misalignment_guess);
   Pose6d internal_wrist_to_camera = poseEigenToCal(params.wrist_to_camera_guess);
+//  Vec3d internal_tweak = vecEigenToCal(Eigen::Vector3d(0,0,0));
+
 
   std::map<std::tuple<int, int>, Vec3d> internal_tweaks;
   std::for_each(params.tweaks_guess.begin(), params.tweaks_guess.end(), [&](std::pair<std::tuple<int, int>, Eigen::Vector3d> p){
@@ -140,10 +143,12 @@ rct_optimizations::Extrinsic3DCameraGantryResult rct_optimizations::optimize(con
       // Problem data structure
       auto* cost_fn = new ObservationCost(img_obs, x_axis_to_base, y_axis_to_x_axis, point_in_target);
 
-      auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost, 3, 6, 6, 6>(cost_fn);
+      auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost, 3, 6, 6, 6, 3>(cost_fn);
 
       ceres::ResidualBlockId id = problem.AddResidualBlock(cost_block, NULL, internal_axis_misalignment.values.data(),
-                               internal_wrist_to_camera.values.data(), internal_base_to_target.values.data());
+                                                           internal_wrist_to_camera.values.data(), internal_base_to_target.values.data(),
+                                                           internal_tweaks.at(std::tuple<int,int>(obs_id,obs_corner_index)).values.data());
+
       res_block_ids.push_back(id);
     }
   }
@@ -172,68 +177,10 @@ rct_optimizations::Extrinsic3DCameraGantryResult rct_optimizations::optimize(con
   result.initial_cost_per_obs = summary.initial_cost / summary.num_residuals;
   result.final_cost_per_obs = summary.final_cost / summary.num_residuals;
 
+  std::for_each(internal_tweaks.begin(), internal_tweaks.end(), [&](std::pair<std::tuple<int, int>, Vec3d> p){
+      Eigen::Vector3d tweak = vecCalToEigen(p.second);
+      result.tweaks.insert(std::make_pair(p.first, tweak));
+  });
+
   return result;
 }
-
-//void rct_optimizations::checkSanity()
-//{
-//    rct_optimizations::Extrinsic3DCameraGantryProblem params;
-//    params.x_axis_poses.push_back(Eigen::Affine3d::Identity());
-//    params.y_axis_poses.push_back(Eigen::Affine3d::Identity());
-
-//    Eigen::Affine3d target_pose;
-//    target_pose.setIdentity();
-//    target_pose.translation() = Eigen::Vector3d(1.0, 0.0, 1.0);
-//    params.base_to_target_guess = target_pose;
-
-//    params.axis_misalignment_guess = Eigen::Affine3d::Identity();
-//    params.wrist_to_camera_guess = Eigen::Affine3d::Identity();
-
-//    Correspondence3DSet corrs;
-//    Correspondence3D3D corr;
-//    corr.in_image = Eigen::Vector3d(1.0, 1.1, 1.0);
-//    corr.in_target = Eigen::Vector3d(0.0, 1.0, 0.0);
-//    corrs.push_back(corr);
-//    params.observations.push_back(corrs);
-
-//    Pose6d internal_base_to_target = poseEigenToCal(params.base_to_target_guess);
-//    Pose6d internal_axis_misalignment = poseEigenToCal(params.axis_misalignment_guess);
-//    Pose6d internal_wrist_to_camera = poseEigenToCal(params.wrist_to_camera_guess);
-
-//    ceres::Problem problem;
-//    std::vector<ceres::ResidualBlockId> res_block_ids;
-//    for (std::size_t i = 0; i < params.x_axis_poses.size(); ++i) // For each gantry pose / image set
-//    {
-//      for (std::size_t j = 0; j < params.observations[i].size(); ++j) // For each 3D target point seen in the point cloud
-//      {
-//        // Define
-//        const auto& img_obs = params.observations[i][j].in_image;
-//        const auto& point_in_target = params.observations[i][j].in_target;
-//        const auto base_to_x_axis = params.x_axis_poses[i];
-//        const auto x_axis_to_y_axis = params.y_axis_poses[i];
-
-//        // Allocate Ceres data structures - ownership is taken by the ceres
-//        // Problem data structure
-//        auto* cost_fn = new ObservationCost(img_obs, base_to_x_axis, x_axis_to_y_axis, point_in_target);
-
-//        auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost, 3, 6, 6, 6>(cost_fn);
-
-//        ceres::ResidualBlockId id = problem.AddResidualBlock(cost_block, NULL, internal_axis_misalignment.values.data(),
-//                                    internal_wrist_to_camera.values.data(), internal_base_to_target.values.data());
-//        res_block_ids.push_back(id);
-//      }
-//    }
-//    ceres::Problem::EvaluateOptions options;
-//    options.residual_blocks = res_block_ids;
-//    double total_cost = 0.0;
-//    std::vector<double> residuals;
-//    problem.Evaluate(options, &total_cost, &residuals, nullptr, nullptr);
-////    for (int i = 0; i < residuals.size(); i++)
-////    {
-////        std::cout << residuals[i] << std::endl;
-////    }
-////    ceres::Solver::Options options;
-////    ceres::Solver::Summary summary;
-
-////    ceres::Solve(options, &problem, &summary);
-//}
