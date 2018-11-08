@@ -58,9 +58,12 @@ public:
 
     // Transform points into camera coordinates
     T target_pt[3];
-    target_pt[0] = T(target_pt_object_(0)) + object_point_tweak[0];
-    target_pt[1] = T(target_pt_object_(1)) + object_point_tweak[1];
-    target_pt[2] = T(target_pt_object_(2)) + object_point_tweak[2];
+//    target_pt[0] = T(target_pt_object_(0)) + object_point_tweak[0];
+//    target_pt[1] = T(target_pt_object_(1)) + object_point_tweak[1];
+//    target_pt[2] = T(target_pt_object_(2)) + object_point_tweak[2];
+    target_pt[0] = T(target_pt_object_(0));
+    target_pt[1] = T(target_pt_object_(1));
+    target_pt[2] = T(target_pt_object_(2));
     transformPoint(target_angle_axis, target_position, target_pt, world_point);
 
     // Need to transform point from world into intermediate frame
@@ -79,9 +82,12 @@ public:
     poseTransformPoint(pose_y_axis_to_x_axis_inv_, y_axis_point_undistorted, world_point_undistorted);
 
     // Cost needs to account for getting the image and object points close together without having the object point deviate too much from its initial position.
-    residual[0] = world_point_undistorted[0] - observed_pt_world_.x() + object_point_tweak[0];
-    residual[1] = world_point_undistorted[1] - observed_pt_world_.y() + object_point_tweak[1];
-    residual[2] = world_point_undistorted[2] - observed_pt_world_.z() + object_point_tweak[2];
+//    residual[0] = world_point_undistorted[0] - observed_pt_world_.x() + object_point_tweak[0];
+//    residual[1] = world_point_undistorted[1] - observed_pt_world_.y() + object_point_tweak[1];
+//    residual[2] = world_point_undistorted[2] - observed_pt_world_.z() + object_point_tweak[2];
+    residual[0] = world_point_undistorted[0] - observed_pt_world_.x();
+    residual[1] = world_point_undistorted[1] - observed_pt_world_.y();
+    residual[2] = world_point_undistorted[2] - observed_pt_world_.z();
 
     return true;
   }

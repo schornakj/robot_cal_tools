@@ -82,10 +82,19 @@ struct CorrespondenceMarker3D3D
   Eigen::Vector3d in_image;
 };
 
+struct CorrespondenceARMulti3D3D
+{
+  int id;
+  int index_corner;
+  Eigen::Affine3d pose_axis_x_first, pose_axis_y_first, pose_axis_x_second, pose_axis_y_second;
+  Eigen::Vector3d point_first, point_second;
+};
+
 
 
 using Correspondence3DSet = std::vector<Correspondence3D3D>;
 using CorrespondenceMarker3DSet = std::vector<CorrespondenceMarker3D3D>;
+using CorrespondenceARMulti3D3Dset = std::vector<CorrespondenceARMulti3D3D>;
 
 // Key is marker ID and corner index. Vector is correction to object point in X, Y, and Z.
 using ObjectPointCorrection3DSet = std::map<std::tuple<int, int>, Eigen::Vector3d>;
