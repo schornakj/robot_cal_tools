@@ -6,6 +6,12 @@
 #include <rct_optimizations_tests/utilities.h>
 #include <rct_optimizations_tests/observation_creator.h>
 
+struct GantryPose
+{
+    Eigen::Affine3d tform_world_to_x;
+    Eigen::Affine3d tform_x_to_wrist;
+};
+
 static void print_results(const rct_optimizations::Extrinsic3DCameraGantryMultiObsResult& r)
 {
     // Report results
@@ -13,8 +19,8 @@ static void print_results(const rct_optimizations::Extrinsic3DCameraGantryMultiO
     std::cout << "Initial cost?: " << r.initial_cost_per_obs << "\n";
     std::cout << "Final cost?: " << r.final_cost_per_obs << "\n";
 
-    Eigen::Affine3d axis_mis = r.axis_misalignment;
-    Eigen::Affine3d cam_mis = r.wrist_to_camera;
+    Eigen::Affine3d axis_mis = r.axis_misalignment_inv;
+    Eigen::Affine3d cam_mis = r.wrist_to_camera_inv;
 
     std::cout << "Estimated Axis Misalignment:\n";
     std::cout << axis_mis.matrix() << "\n";
@@ -22,74 +28,108 @@ static void print_results(const rct_optimizations::Extrinsic3DCameraGantryMultiO
     std::cout << cam_mis.matrix() << "\n";
 }
 
-double f_rand(double min, double max)
+static void make_gantry_poses(const int& rows, const int& cols, const double& spacing, std::vector<GantryPose> &poses)
 {
-    double f = (double)rand() / max;
-    return min + f * (max - min);
+    poses.reserve(rows * cols);
+
+    for (int i = 1; i < (rows + 1); i++)
+    {
+      double y = (rows - i) * spacing;
+      for (int j = 0; j < cols; j++)
+      {
+        double x = j * spacing;
+        GantryPose gpose;
+        Eigen::Affine3d pose_x = Eigen::Affine3d::Identity();
+        pose_x.translation() = Eigen::Vector3d(x, 0.0, 0.0);
+
+        Eigen::Affine3d pose_y = Eigen::Affine3d::Identity();
+        pose_y.translation() = Eigen::Vector3d(0.0, y, 0.0);
+
+        gpose.tform_world_to_x = pose_x;
+        gpose.tform_x_to_wrist = pose_y;
+        poses.push_back(gpose);
+      }
+    }
 }
 
-Eigen::Vector3d apply_misalignment(const Eigen::Vector3d& world_point_in,
+//double f_rand(double min, double max)
+//{
+//    double f = (double)rand() / max;
+//    return min + f * (max - min);
+//}
+
+Eigen::Vector3d apply_misalignment(const Eigen::Vector3d& point_world_to_target,
                                    const Eigen::Affine3d& tform_world_to_x,
                                    const Eigen::Affine3d& tform_x_to_y,
                                    const Eigen::Affine3d& tform_axis_misalignment,
                                    const Eigen::Affine3d& tform_wrist_misalignment)
 {
+    std::cout << "Applying misalignment" << std::endl;
     Eigen::Affine3d tform_world_to_wrist_perturbed = tform_world_to_x * tform_axis_misalignment * tform_x_to_y * tform_wrist_misalignment;
     Eigen::Affine3d tform_world_to_wrist_unperturbed = tform_world_to_x * tform_x_to_y;
-    return tform_world_to_wrist_perturbed * tform_world_to_wrist_unperturbed.inverse() * world_point_in;
+    std::cout << "Unperturbed" << std::endl << tform_world_to_wrist_unperturbed.matrix() << std::endl;
+    std::cout << "Perturbed" << std::endl << tform_world_to_wrist_perturbed.matrix() << std::endl;
+    Eigen::Vector3d point_wrist_to_target = tform_world_to_wrist_unperturbed.inverse() * point_world_to_target;
+    return tform_world_to_wrist_perturbed * point_wrist_to_target;
 }
 
 void run_test()
 {
+    rct_optimizations::test::Target target = rct_optimizations::test::makeTarget(2, 2, 1.0);
 
-    std::vector<Eigen::Vector3d> world_points {Eigen::Vector3d(0.5, 0.25, -1.0),
-                                               Eigen::Vector3d(1.0, 0.25, -1.0),
-                                               Eigen::Vector3d(1.0, 0.75, -1.0),
-                                               Eigen::Vector3d(0.5, 0.75, -1.0)};
+//    std::vector<Eigen::Vector3d> world_points {Eigen::Vector3d(0.5, 0.25, -1.0),
+//                                               Eigen::Vector3d(1.0, 0.25, -1.0),
+//                                               Eigen::Vector3d(1.0, 0.75, -1.0),
+//                                               /*Eigen::Vector3d(0.5, 0.75, -1.0)*/};
 
-    Eigen::Affine3d transform_world_to_x_first = Eigen::Affine3d::Identity();
-    Eigen::Affine3d transform_x_to_y_first = Eigen::Affine3d::Identity();
-    Eigen::Affine3d transform_world_to_x_second = Eigen::Affine3d::Identity();
-    Eigen::Affine3d transform_x_to_y_second = Eigen::Affine3d::Identity();
+    std::vector<GantryPose> gantry_poses;
+    make_gantry_poses(2, 2, 0.5, gantry_poses);
 
-    transform_world_to_x_first.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
-    transform_x_to_y_first.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+//    Eigen::Affine3d transform_world_to_x_first = Eigen::Affine3d::Identity();
+//    Eigen::Affine3d transform_x_to_y_first = Eigen::Affine3d::Identity();
+//    Eigen::Affine3d transform_world_to_x_second = Eigen::Affine3d::Identity();
+//    Eigen::Affine3d transform_x_to_y_second = Eigen::Affine3d::Identity();
 
-    transform_world_to_x_second.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
-    transform_x_to_y_second.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+//    transform_world_to_x_first.translation() = Eigen::Vector3d(0.5, 0.0, 0.0);
+//    transform_x_to_y_first.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
+
+//    transform_world_to_x_second.translation() = Eigen::Vector3d(1.0, 0.0, 0.0);
+//    transform_x_to_y_second.translation() = Eigen::Vector3d(0.0, 0.5, 0.0);
 
     const double spatial_noise = 0.0;
     const double angular_noise = 1. * M_PI / 180.0;
 
-    Eigen::Affine3d true_axis_misalignment = rct_optimizations::test::perturbPose(Eigen::Affine3d::Identity(), spatial_noise, angular_noise);
+    const Eigen::Affine3d true_axis_misalignment = Eigen::Affine3d::Identity();
+//    const Eigen::Affine3d true_axis_misalignment = rct_optimizations::test::perturbPose(Eigen::Affine3d::Identity(), spatial_noise, angular_noise);
     std::cout << "real axis misalignment" << std::endl << true_axis_misalignment.matrix() << std::endl;
 
-    Eigen::Affine3d true_wrist_misalignment = rct_optimizations::test::perturbPose(Eigen::Affine3d::Identity(), spatial_noise, angular_noise);
+    const Eigen::Affine3d true_wrist_misalignment = rct_optimizations::test::perturbPose(Eigen::Affine3d::Identity(), spatial_noise, angular_noise);
     std::cout << "real wrist misalignment" << std::endl << true_wrist_misalignment.matrix() << std::endl;
 
-    Eigen::Affine3d tform_perturbed = transform_world_to_x_first * true_axis_misalignment * transform_x_to_y_first * true_wrist_misalignment;
+//    Eigen::Affine3d tform_perturbed = transform_world_to_x_first * true_axis_misalignment * transform_x_to_y_first * true_wrist_misalignment;
 
-    std::cout << "first point in world frame" << std::endl << world_points[0] << std::endl;
+//    std::cout << "first point in world frame" << std::endl << target.points[0] << std::endl;
 
-    Eigen::Vector3d first_pt_in_wrist_frame = transform_world_to_x_first * transform_x_to_y_first * world_points[0];
+//    Eigen::Vector3d first_pt_in_wrist_frame = (transform_world_to_x_first * transform_x_to_y_first).inverse() * target.points[0];
 
-    std::cout << "first point in wrist frame" << std::endl << first_pt_in_wrist_frame << std::endl;
+//    std::cout << "first point in wrist frame" << std::endl << first_pt_in_wrist_frame << std::endl;
 
-    Eigen::Vector3d first_pt_world_frame_perturbed = apply_misalignment(world_points[0], transform_world_to_x_first, transform_x_to_y_first, true_axis_misalignment, true_wrist_misalignment);
+//    Eigen::Vector3d first_pt_world_frame_perturbed = apply_misalignment(target.points[0], transform_world_to_x_first, transform_x_to_y_first, true_axis_misalignment, true_wrist_misalignment);
 
-    std::cout << "first point in world frame perturbed" << std::endl << first_pt_world_frame_perturbed << std::endl;
+//    std::cout << "first point in world frame perturbed" << std::endl << first_pt_world_frame_perturbed << std::endl;
 
     rct_optimizations::Extrinsic3DCameraGantryMultiObsProblem problem_def;
     problem_def.axis_misalignment_guess = Eigen::Affine3d::Identity();
     problem_def.wrist_to_camera_guess = Eigen::Affine3d::Identity();
     problem_def.base_to_target_guess = Eigen::Affine3d::Identity();
 
-    rct_optimizations::CorrespondenceARMulti3D3D corr_base;
+//    rct_optimizations::CorrespondenceARMulti3D3D corr_base;
 
 
 // TODO: Add pairs of image points for each object point
 
-    for(std::size_t i = 0; i < world_points.size(); i++)
+
+    for(std::size_t i = 0; i < target.points.size(); i++)
     {
         std::cout << "CORRESPONDENCE " << i << std::endl;
         rct_optimizations::CorrespondenceARMulti3D3D corr_new;
@@ -99,15 +139,15 @@ void run_test()
         corr_new.pose_axis_y_second = transform_x_to_y_second;
         corr_new.id = 0;
         corr_new.index_corner = i;
-        corr_new.point_first = apply_misalignment(world_points[i], transform_world_to_x_first, transform_x_to_y_first, true_axis_misalignment, true_wrist_misalignment);
-        corr_new.point_second = apply_misalignment(world_points[i], transform_world_to_x_second, transform_x_to_y_second, true_axis_misalignment, true_wrist_misalignment);
+        corr_new.point_first = apply_misalignment(target.points[i], transform_world_to_x_first, transform_x_to_y_first, true_axis_misalignment, true_wrist_misalignment);
+        corr_new.point_second = apply_misalignment(target.points[i], transform_world_to_x_second, transform_x_to_y_second, true_axis_misalignment, true_wrist_misalignment);
 
         std::cout << "X axis 1: " << std::endl << corr_new.pose_axis_x_first.matrix() << std::endl;
         std::cout << "Y axis 1: " << std::endl << corr_new.pose_axis_y_first.matrix() << std::endl;
         std::cout << "X axis 2: " << std::endl << corr_new.pose_axis_x_second.matrix() << std::endl;
         std::cout << "Y axis 2: " << std::endl << corr_new.pose_axis_y_second.matrix() << std::endl;
 
-        std::cout << "Actual factual position of this point:" << std::endl << world_points[i] << std::endl;
+        std::cout << "Actual factual position of this point:" << std::endl << target.points[i] << std::endl;
         std::cout << "View from 1st pose:" << std::endl << corr_new.point_first << std::endl;
         std::cout << "Viewed from 2nd pose:" << std::endl << corr_new.point_second << std::endl;
         problem_def.observations.push_back(corr_new);
@@ -119,13 +159,24 @@ void run_test()
     EXPECT_TRUE(result.converged);
     EXPECT_TRUE(result.final_cost_per_obs < 1.0);
 
-    EXPECT_TRUE(result.axis_misalignment.isApprox(true_axis_misalignment, 1e-6));
-    EXPECT_TRUE(result.wrist_to_camera.isApprox(true_wrist_misalignment, 1e-6));
+    EXPECT_TRUE(result.axis_misalignment_inv.isApprox(true_axis_misalignment, 1e-6));
+    EXPECT_TRUE(result.wrist_to_camera_inv.isApprox(true_wrist_misalignment, 1e-6));
 
     print_results(result);
+    std::cout << "real axis misalignment" << std::endl << true_axis_misalignment.matrix() << std::endl;
+    std::cout << "real wrist misalignment" << std::endl << true_wrist_misalignment.matrix() << std::endl;
+
+    Eigen::Vector3d point_first_corrected = apply_misalignment(target.points[0],
+            transform_world_to_x_first,
+            transform_x_to_y_first,
+            Eigen::Affine3d(true_axis_misalignment * result.axis_misalignment),
+            Eigen::Affine3d(true_wrist_misalignment * result.wrist_to_camera));
+
+    std::cout << "first point in world frame" << std::endl << target.points[0] << std::endl;
+    std::cout << "Corrected 1st pt: " << std::endl << point_first_corrected << std::endl;
 }
 
-TEST(CameraOnGantry, placeholder)
+TEST(CameraOnGantry, RandomMisalignment)
 {
     run_test();
 }

@@ -11,7 +11,7 @@ static void makePoints(int rows, int cols, double spacing, std::vector<Eigen::Ve
     for (int j = 0; j < cols; j++)
     {
       double x = j * spacing;
-      Eigen::Vector3d point(x, y, 0.0);
+      Eigen::Vector3d point(x, y, -1.0);
       points.push_back(point);
     }
   }
@@ -67,6 +67,7 @@ Eigen::Affine3d rct_optimizations::test::perturbPose(const Eigen::Affine3d& pose
 
   Eigen::Vector3d translation (spatial_dist(eng), spatial_dist(eng), spatial_dist(eng));
   Eigen::Vector3d rot_axis (one_to_one(eng), one_to_one(eng), one_to_one(eng));
+
   rot_axis.normalize();
 
   double angle = angle_dist(eng);

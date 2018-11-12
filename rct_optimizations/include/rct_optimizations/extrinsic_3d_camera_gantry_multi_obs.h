@@ -42,6 +42,8 @@ struct Extrinsic3DCameraGantryMultiObsResult
 
   Eigen::Affine3d axis_misalignment;
   Eigen::Affine3d wrist_to_camera;
+  Eigen::Affine3d axis_misalignment_inv;
+  Eigen::Affine3d wrist_to_camera_inv;
 };
 
 Extrinsic3DCameraGantryMultiObsResult optimize(const Extrinsic3DCameraGantryMultiObsProblem& params);

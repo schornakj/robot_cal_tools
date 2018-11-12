@@ -35,12 +35,19 @@ public:
       : observed_pt_first_(translation_world_to_point_first),
         observed_pt_second_(translation_world_to_point_second),
 
+        transform_world_to_x_first_(poseEigenToCal(world_to_x_first)),
+        transform_world_to_x_second_(poseEigenToCal(world_to_x_second)),
+
         transform_x_to_world_first_(poseEigenToCal(world_to_x_first.inverse())),
         transform_x_to_world_second_(poseEigenToCal(world_to_x_second.inverse())),
+
+        transform_x_to_y_first_(poseEigenToCal(x_to_y_first)),
+        transform_x_to_y_second_(poseEigenToCal(x_to_y_second)),
 
         transform_y_to_x_first_(poseEigenToCal(x_to_y_first.inverse())),
         transform_y_to_x_second_(poseEigenToCal(x_to_y_second.inverse()))
   {
+      // BUG: transform_pt_to_wrist_first_ seems incorrect
       Eigen::Affine3d transform_world_to_point_first = Eigen::Affine3d::Identity();
       transform_world_to_point_first.translation() = translation_world_to_point_first;
       Eigen::Affine3d transform_wrist_to_point_first = (world_to_x_first * x_to_y_first).inverse() * transform_world_to_point_first;
@@ -78,7 +85,7 @@ public:
         obs_pt_first[1] = T(observed_pt_first_[1]);
         obs_pt_first[2] = T(observed_pt_first_[2]);
 
-//        std::cout << "Obs Pt 1: " << obs_pt_first[0] << " " << obs_pt_first[1] << " " << obs_pt_first[2] << std::endl;
+//        std::cout << "Obs Pt 1: " << std::endl << obs_pt_first[0] << std::endl << obs_pt_first[1] << std::endl << obs_pt_first[2] << std::endl;
 
         T shoulder_pt_first_uncorr[3];
         T shoulder_pt_first_corr[3];
@@ -86,20 +93,34 @@ public:
         T wrist_pt_first_corr[3];
         T target_pt_corr_first[3];
 
-        poseTransformPoint(transform_x_to_world_first_, obs_pt_first, shoulder_pt_first_uncorr);
-        transformPoint(misalignment_angle_axis, misalignment_position, shoulder_pt_first_uncorr, shoulder_pt_first_corr);
-        poseTransformPoint(transform_y_to_x_first_, shoulder_pt_first_corr, wrist_pt_first_uncorr);
-        transformPoint(wrist_angle_axis, wrist_position, wrist_pt_first_uncorr, wrist_pt_first_corr);
-        poseTransformPoint(transform_pt_to_wrist_first_, wrist_pt_first_corr, target_pt_corr_first);
+        T shoulder_pt_first_back[3];
+        T obs_pt_first_back[3];
 
-//        std::cout << "Corr Pt 1: " << target_pt_corr_first[0] << " " << target_pt_corr_first[1] << " " << target_pt_corr_first[2] << std::endl;
+        poseTransformPoint(transform_x_to_world_first_, obs_pt_first, shoulder_pt_first_uncorr);
+//        std::cout << "1 shoulder_uncorr: " << std::endl << shoulder_pt_first_uncorr[0] << std::endl << shoulder_pt_first_uncorr[1] << std::endl << shoulder_pt_first_uncorr[2] << std::endl;
+        transformPoint(misalignment_angle_axis, misalignment_position, shoulder_pt_first_uncorr, shoulder_pt_first_corr);
+//        std::cout << "1 shoulder_corr: " << std::endl << shoulder_pt_first_corr[0] << std::endl << shoulder_pt_first_corr[1] << std::endl << shoulder_pt_first_corr[2] << std::endl;
+        poseTransformPoint(transform_y_to_x_first_, shoulder_pt_first_corr, wrist_pt_first_uncorr);
+//        std::cout << "1 wrist_uncorr: " << std::endl << wrist_pt_first_uncorr[0] << std::endl << wrist_pt_first_uncorr[1] << std::endl << wrist_pt_first_uncorr[2] << std::endl;
+        transformPoint(wrist_angle_axis, wrist_position, wrist_pt_first_uncorr, wrist_pt_first_corr);
+//        std::cout << "1 wrist_corr: " << std::endl << wrist_pt_first_corr[0] << std::endl << wrist_pt_first_corr[1] << std::endl << wrist_pt_first_corr[2] << std::endl;
+        poseTransformPoint(transform_x_to_y_first_, wrist_pt_first_corr, shoulder_pt_first_back);
+//        std::cout << "1 shoulder_back: " << std::endl << shoulder_pt_first_back[0] << std::endl << shoulder_pt_first_back[1] << std::endl << shoulder_pt_first_back[2] << std::endl;
+        poseTransformPoint(transform_world_to_x_first_, shoulder_pt_first_back, obs_pt_first_back);
+//        std::cout << "1 obs_pt_back: " << std::endl << obs_pt_first_back[0] << std::endl << obs_pt_first_back[1] << std::endl << obs_pt_first_back[2] << std::endl;
+
+
+
+//        poseTransformPoint(transform_pt_to_wrist_first_, wrist_pt_first_corr, target_pt_corr_first);
+
+//        std::cout << "Corr Pt 1: " << std::endl << target_pt_corr_first[0] << std::endl << target_pt_corr_first[1] << std::endl << target_pt_corr_first[2] << std::endl;
 
         T obs_pt_second[3];
         obs_pt_second[0] = T(observed_pt_second_[0]);
         obs_pt_second[1] = T(observed_pt_second_[1]);
         obs_pt_second[2] = T(observed_pt_second_[2]);
 
-//        std::cout << "Obs Pt 2: " << obs_pt_second[0] << " " << obs_pt_second[1] << " " << obs_pt_second[2] << std::endl;
+//        std::cout << "Obs Pt 2: " << std::endl << obs_pt_second[0] << std::endl << obs_pt_second[1] << std::endl << obs_pt_second[2] << std::endl;
 
 
         T shoulder_pt_second_uncorr[3];
@@ -108,19 +129,33 @@ public:
         T wrist_pt_second_corr[3];
         T target_pt_corr_second[3];
 
+        T shoulder_pt_second_back[3];
+        T obs_pt_second_back[3];
+
         poseTransformPoint(transform_x_to_world_second_, obs_pt_second, shoulder_pt_second_uncorr);
+//        std::cout << "2 shoulder_uncorr: " << std::endl << shoulder_pt_second_uncorr[0] << std::endl << shoulder_pt_second_uncorr[1] << std::endl << shoulder_pt_second_uncorr[2] << std::endl;
         transformPoint(misalignment_angle_axis, misalignment_position, shoulder_pt_second_uncorr, shoulder_pt_second_corr);
+//        std::cout << "2 shoulder_corr: " << std::endl << shoulder_pt_second_corr[0] << std::endl << shoulder_pt_second_corr[1] << std::endl << shoulder_pt_second_corr[2] << std::endl;
         poseTransformPoint(transform_y_to_x_second_, shoulder_pt_second_corr, wrist_pt_second_uncorr);
+//        std::cout << "2 wrist_uncorr: " << std::endl << wrist_pt_second_uncorr[0] << std::endl << wrist_pt_second_uncorr[1] << std::endl << wrist_pt_second_uncorr[2] << std::endl;
         transformPoint(wrist_angle_axis, wrist_position, wrist_pt_second_uncorr, wrist_pt_second_corr);
-        poseTransformPoint(transform_pt_to_wrist_second_, wrist_pt_second_corr, target_pt_corr_second);
+//        std::cout << "2 wrist_corr: " << std::endl << wrist_pt_second_corr[0] << std::endl << wrist_pt_second_corr[1] << std::endl << wrist_pt_second_corr[2] << std::endl;
+        poseTransformPoint(transform_x_to_y_second_, wrist_pt_second_corr, shoulder_pt_second_back);
+//        std::cout << "2 shoulder_back: " << std::endl << shoulder_pt_second_back[0] << std::endl << shoulder_pt_second_back[1] << std::endl << shoulder_pt_second_back[2] << std::endl;
+        poseTransformPoint(transform_world_to_x_second_, shoulder_pt_second_back, obs_pt_second_back);
+//        std::cout << "2 obs_pt_back: " << std::endl << obs_pt_second_back[0] << std::endl << obs_pt_second_back[1] << std::endl << obs_pt_second_back[2] << std::endl;
 
-//        std::cout << "Corr Pt 2: " << target_pt_corr_second[0] << " " << target_pt_corr_second[1] << " " << target_pt_corr_second[2] << std::endl;
 
-        residual[0] = target_pt_corr_second[0] - target_pt_corr_first[0];
-        residual[1] = target_pt_corr_second[1] - target_pt_corr_first[1];
-        residual[2] = target_pt_corr_second[2] - target_pt_corr_first[2];
 
-//        std::cout << "Res: " << residual[0] << " " << residual[1] << " " << residual[2] << std::endl;
+//        poseTransformPoint(transform_pt_to_wrist_second_, wrist_pt_second_corr, target_pt_corr_second);
+
+//        std::cout << "Corr Pt 2: " << std::endl << target_pt_corr_second[0] << std::endl << target_pt_corr_second[1] << std::endl << target_pt_corr_second[2] << std::endl;
+
+        residual[0] = obs_pt_second_back[0] - obs_pt_first_back[0];
+        residual[1] = obs_pt_second_back[1] - obs_pt_first_back[1];
+        residual[2] = obs_pt_second_back[2] - obs_pt_first_back[2];
+
+//        std::cout << "Res: " << std::endl << residual[0] << std::endl << residual[1] << std::endl << residual[2] << std::endl;
 
 
         return true;
@@ -134,6 +169,11 @@ private:
 
   Pose6d transform_x_to_world_first_, transform_x_to_world_second_;
 
+  Pose6d transform_world_to_x_first_, transform_world_to_x_second_;
+
+  Pose6d transform_wrist_to_pt_first_, transform_wrist_to_pt_second_;
+
+  Pose6d transform_x_to_y_first_, transform_x_to_y_second_;
   Pose6d transform_y_to_x_first_, transform_y_to_x_second_;
 };
 
@@ -159,6 +199,8 @@ rct_optimizations::Extrinsic3DCameraGantryMultiObsResult rct_optimizations::opti
 
   for (std::size_t i = 0; i < params.observations.size(); ++i) // For each gantry pose / image set
   {
+//      std::cout << "OBS " << i << std::endl;
+
       // Define
       const auto& img_obs_first = params.observations[i].point_first;
       const auto& img_obs_second = params.observations[i].point_second;
@@ -191,11 +233,11 @@ rct_optimizations::Extrinsic3DCameraGantryMultiObsResult rct_optimizations::opti
   double total_cost = 0.0;
   std::vector<double> residuals;
   problem.Evaluate(eval_options, &total_cost, &residuals, nullptr, nullptr);
-  std::cout << "----------------" << std::endl << "RESIDUALS" << std::endl;
-  for (int i = 0; i < residuals.size(); i+=3)
-  {
-      std::cout << sqrt(residuals[i]) << " " << sqrt(residuals[i+1]) << " " << sqrt(residuals[i+2]) << std::endl;
-  }
+//  std::cout << "----------------" << std::endl << "RESIDUALS" << std::endl;
+//  for (int i = 0; i < residuals.size(); i+=3)
+//  {
+//      std::cout << sqrt(residuals[i]) << " " << sqrt(residuals[i+1]) << " " << sqrt(residuals[i+2]) << std::endl;
+//  }
 
   ceres::Solver::Options options;
   options.function_tolerance = 1e-9;
@@ -206,7 +248,11 @@ rct_optimizations::Extrinsic3DCameraGantryMultiObsResult rct_optimizations::opti
   Extrinsic3DCameraGantryMultiObsResult result;
   result.converged = summary.termination_type == ceres::CONVERGENCE;
   result.axis_misalignment = poseCalToEigen(internal_axis_misalignment);
+  result.axis_misalignment_inv = poseCalToEigen(internal_axis_misalignment).inverse();
+
   result.wrist_to_camera = poseCalToEigen(internal_wrist_to_camera);
+  result.wrist_to_camera_inv = poseCalToEigen(internal_wrist_to_camera).inverse();
+
   result.initial_cost_per_obs = sqrt(summary.initial_cost / summary.num_residuals);
   result.final_cost_per_obs = sqrt(summary.final_cost / summary.num_residuals);
 
