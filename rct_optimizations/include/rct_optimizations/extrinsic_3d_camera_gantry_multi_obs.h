@@ -31,6 +31,7 @@ struct Extrinsic3DCameraGantryMultiObsProblem
 
   Eigen::Affine3d axis_misalignment_guess;
   Eigen::Affine3d wrist_to_camera_guess;
+  Eigen::Affine3d base_to_target_guess;
 };
 
 struct Extrinsic3DCameraGantryMultiObsResult

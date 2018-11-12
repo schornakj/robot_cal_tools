@@ -67,14 +67,17 @@ if(CATKIN_ENABLE_TESTING)
   target_include_directories(${PROJECT_NAME}_test_support PUBLIC test/include)
 
   # The actual tests...
-  catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
+#  catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
+#  target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
 
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
+#  catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
+#  target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
 
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
-  target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
+#  catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
+#  target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
+
+  catkin_add_gtest(${PROJECT_NAME}_extrinsic_3d_camera_gantry_multi_obs_tests test/extrinsic_3d_camera_gantry_multi_obs_utest.cpp)
+  target_link_libraries(${PROJECT_NAME}_extrinsic_3d_camera_gantry_multi_obs_tests ${PROJECT_NAME}_test_support)
 endif()
 
 #############
