@@ -12,6 +12,35 @@ struct GantryPose
     Eigen::Affine3d tform_x_to_wrist;
 };
 
+template<typename T>
+void startFindCombinationRecursive(const std::vector<T> &objects_in,
+                                   const int n,
+                                   std::vector<std::vector<T>> &combinations)
+{
+    std::vector<T> combination;
+    findCombinationRecursive(objects_in, 0, n, combination, combinations);
+}
+
+template<typename T>
+void findCombinationRecursive(const std::vector<T> &objects_in,
+                              int offset,
+                              int k,
+                              std::vector<T> &combination,
+                              std::vector<std::vector<T>> &combinations)
+{
+    if (k == 0)
+    {
+        combinations.push_back(combination);
+        return;
+    }
+    for (int i = offset; i < objects_in.size(); ++i)
+    {
+        combination.push_back(objects_in[i]);
+        findCombinationRecursive(objects_in, i+1, k-1, combination, combinations);
+        combination.pop_back();
+    }
+}
+
 static void print_results(const rct_optimizations::Extrinsic3DCameraGantryMultiObsResult& r)
 {
     // Report results
@@ -75,7 +104,7 @@ Eigen::Vector3d apply_misalignment(const Eigen::Vector3d& point_world_to_target,
 
 void run_test()
 {
-    rct_optimizations::test::Target target = rct_optimizations::test::makeTarget(2, 2, 1.0);
+    rct_optimizations::test::Target target = rct_optimizations::test::makeTarget(5, 5, 1.0);
 
 //    std::vector<Eigen::Vector3d> world_points {Eigen::Vector3d(0.5, 0.25, -1.0),
 //                                               Eigen::Vector3d(1.0, 0.25, -1.0),
@@ -83,7 +112,9 @@ void run_test()
 //                                               /*Eigen::Vector3d(0.5, 0.75, -1.0)*/};
 
     std::vector<GantryPose> gantry_poses;
-    make_gantry_poses(2, 2, 0.5, gantry_poses);
+    make_gantry_poses(3, 3, 0.5, gantry_poses);
+    std::vector<std::vector<GantryPose>> combinations;
+    startFindCombinationRecursive(gantry_poses, 2, combinations);
 
 //    Eigen::Affine3d transform_world_to_x_first = Eigen::Affine3d::Identity();
 //    Eigen::Affine3d transform_x_to_y_first = Eigen::Affine3d::Identity();
@@ -128,31 +159,36 @@ void run_test()
 
 // TODO: Add pairs of image points for each object point
 
-
-    for(std::size_t i = 0; i < target.points.size(); i++)
+    std::for_each(combinations.begin(), combinations.end(), [&](const std::vector<GantryPose> pair)
     {
-        std::cout << "CORRESPONDENCE " << i << std::endl;
-        rct_optimizations::CorrespondenceARMulti3D3D corr_new;
-        corr_new.pose_axis_x_first = transform_world_to_x_first;
-        corr_new.pose_axis_y_first = transform_x_to_y_first;
-        corr_new.pose_axis_x_second = transform_world_to_x_second;
-        corr_new.pose_axis_y_second = transform_x_to_y_second;
-        corr_new.id = 0;
-        corr_new.index_corner = i;
-        corr_new.point_first = apply_misalignment(target.points[i], transform_world_to_x_first, transform_x_to_y_first, true_axis_misalignment, true_wrist_misalignment);
-        corr_new.point_second = apply_misalignment(target.points[i], transform_world_to_x_second, transform_x_to_y_second, true_axis_misalignment, true_wrist_misalignment);
+        for(std::size_t i = 0; i < target.points.size(); i++)
+        {
+            std::cout << "CORRESPONDENCE " << i << std::endl;
+            rct_optimizations::CorrespondenceARMulti3D3D corr_new;
+            corr_new.pose_axis_x_first = pair[0].tform_world_to_x;
+            corr_new.pose_axis_y_first = pair[0].tform_x_to_wrist;
+            corr_new.pose_axis_x_second = pair[1].tform_world_to_x;
+            corr_new.pose_axis_y_second = pair[1].tform_x_to_wrist;
+            corr_new.id = 0;
+            corr_new.index_corner = i;
+            corr_new.point_first = apply_misalignment(target.points[i], corr_new.pose_axis_x_first, corr_new.pose_axis_y_first, true_axis_misalignment, true_wrist_misalignment);
+            corr_new.point_second = apply_misalignment(target.points[i], corr_new.pose_axis_x_second, corr_new.pose_axis_y_second, true_axis_misalignment, true_wrist_misalignment);
 
-        std::cout << "X axis 1: " << std::endl << corr_new.pose_axis_x_first.matrix() << std::endl;
-        std::cout << "Y axis 1: " << std::endl << corr_new.pose_axis_y_first.matrix() << std::endl;
-        std::cout << "X axis 2: " << std::endl << corr_new.pose_axis_x_second.matrix() << std::endl;
-        std::cout << "Y axis 2: " << std::endl << corr_new.pose_axis_y_second.matrix() << std::endl;
+            std::cout << "X axis 1: " << std::endl << corr_new.pose_axis_x_first.matrix() << std::endl;
+            std::cout << "Y axis 1: " << std::endl << corr_new.pose_axis_y_first.matrix() << std::endl;
+            std::cout << "X axis 2: " << std::endl << corr_new.pose_axis_x_second.matrix() << std::endl;
+            std::cout << "Y axis 2: " << std::endl << corr_new.pose_axis_y_second.matrix() << std::endl;
 
-        std::cout << "Actual factual position of this point:" << std::endl << target.points[i] << std::endl;
-        std::cout << "View from 1st pose:" << std::endl << corr_new.point_first << std::endl;
-        std::cout << "Viewed from 2nd pose:" << std::endl << corr_new.point_second << std::endl;
-        problem_def.observations.push_back(corr_new);
-        std::cout << std::endl;
-    }
+            std::cout << "Actual factual position of this point:" << std::endl << target.points[i] << std::endl;
+            std::cout << "View from 1st pose:" << std::endl << corr_new.point_first << std::endl;
+            std::cout << "Viewed from 2nd pose:" << std::endl << corr_new.point_second << std::endl;
+            problem_def.observations.push_back(corr_new);
+            std::cout << std::endl;
+        }
+    });
+
+
+
 
     auto result = rct_optimizations::optimize(problem_def);
 
@@ -166,14 +202,14 @@ void run_test()
     std::cout << "real axis misalignment" << std::endl << true_axis_misalignment.matrix() << std::endl;
     std::cout << "real wrist misalignment" << std::endl << true_wrist_misalignment.matrix() << std::endl;
 
-    Eigen::Vector3d point_first_corrected = apply_misalignment(target.points[0],
-            transform_world_to_x_first,
-            transform_x_to_y_first,
-            Eigen::Affine3d(true_axis_misalignment * result.axis_misalignment),
-            Eigen::Affine3d(true_wrist_misalignment * result.wrist_to_camera));
+//    Eigen::Vector3d point_first_corrected = apply_misalignment(target.points[0],
+//            transform_world_to_x_first,
+//            transform_x_to_y_first,
+//            Eigen::Affine3d(true_axis_misalignment * result.axis_misalignment),
+//            Eigen::Affine3d(true_wrist_misalignment * result.wrist_to_camera));
 
-    std::cout << "first point in world frame" << std::endl << target.points[0] << std::endl;
-    std::cout << "Corrected 1st pt: " << std::endl << point_first_corrected << std::endl;
+//    std::cout << "first point in world frame" << std::endl << target.points[0] << std::endl;
+//    std::cout << "Corrected 1st pt: " << std::endl << point_first_corrected << std::endl;
 }
 
 TEST(CameraOnGantry, RandomMisalignment)

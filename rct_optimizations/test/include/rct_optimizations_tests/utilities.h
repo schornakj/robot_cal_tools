@@ -33,7 +33,6 @@ Target makeTarget(int rows, int cols, double spacing);
 CorrespondenceSet zip(const Target& target, const std::vector<Eigen::Vector2d>& image_obs);
 
 Eigen::Affine3d perturbPose(const Eigen::Affine3d& pose, double spatial_noise, double angle_noise);
-
 }
 }
 

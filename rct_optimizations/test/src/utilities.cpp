@@ -76,3 +76,4 @@ Eigen::Affine3d rct_optimizations::test::perturbPose(const Eigen::Affine3d& pose
 
   return new_pose;
 }
+
