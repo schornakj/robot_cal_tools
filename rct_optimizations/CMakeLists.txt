@@ -1,29 +1,21 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5.0)
 project(rct_optimizations)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
-find_package(catkin REQUIRED)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra --verbose)
+endif()
+
+find_package(ament_cmake REQUIRED)
 find_package(Ceres REQUIRED)
-
-catkin_package(
-  INCLUDE_DIRS
-    include
-    ${CERES_INCLUDE_DIRS}
-  LIBRARIES
-    ${PROJECT_NAME}
-  DEPENDS
-    CERES
-)
 
 ###########
 ## Build ##
 ###########
-
-include_directories(
-  include
-  ${CERES_INCLUDE_DIRS}
-)
 
 add_library(${PROJECT_NAME}
   # Utilities
@@ -43,17 +35,20 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/multi_camera_pnp.cpp
 )
 
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(${PROJECT_NAME} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
+  ${CERES_INCLUDE_DIRS}
+)
 
 target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
   ${CERES_LIBRARIES}
 )
 
 #############
 ## Testing ##
 #############
-if(CATKIN_ENABLE_TESTING)
+if(AMENT_ENABLE_TESTING)
   # Build the test support library
   add_library(${PROJECT_NAME}_test_support
     test/src/observation_creator.cpp
@@ -62,28 +57,51 @@ if(CATKIN_ENABLE_TESTING)
   target_include_directories(${PROJECT_NAME}_test_support PUBLIC test/include)
 
   # The actual tests...
-  catkin_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
+  ament_add_gtest(${PROJECT_NAME}_conversion_tests test/conversion_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_conversion_tests ${PROJECT_NAME}_test_support)
 
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
+  ament_add_gtest(${PROJECT_NAME}_extrinsic_multi_static_camera_tests test/extrinsic_multi_static_camera_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_extrinsic_multi_static_camera_tests ${PROJECT_NAME}_test_support)
 
-  catkin_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
+  ament_add_gtest(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests test/extrinsic_camera_on_wrist_utest.cpp)
   target_link_libraries(${PROJECT_NAME}_extrinsic_camera_on_wrist_tests ${PROJECT_NAME}_test_support)
 endif()
+
+
+#############
+## Package ##
+#############
+
+ament_export_include_directories(
+    include
+    ${CERES_INCLUDE_DIRS})
+
+ament_export_libraries(
+    ${PROJECT_NAME}
+    ${CERES_LIBRARIES})
+
+ament_export_dependencies(
+    Ceres)
+
+ament_package()
+
 
 #############
 ## Install ##
 #############
 
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+set(ROS_LIB_DESTINATION lib)
+set(ROS_BIN_DESTINATION bin)
+set(ROS_INCLUDE_DESTINATION include)
+
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${ROS_LIB_DESTINATION}
+  LIBRARY DESTINATION ${ROS_LIB_DESTINATION}
+  RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include/${PROJECT_NAME}
+  DESTINATION ${ROS_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE
 )
