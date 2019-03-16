@@ -7,11 +7,13 @@
 #include <opencv2/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-#include <eigen_conversions/eigen_msg.h>
+//#include <eigen_conversions/eigen_msg.h>
 
-#include <std_srvs/srv/Empty.h>
+#include <std_srvs/srv/empty.hpp>
 
 #include <rct_image_tools/image_observation_finder.h>
+
+#include <vector>
 
 class TransformMonitor
 {
@@ -24,18 +26,18 @@ public:
     , listener_(buffer_)
   {
     // Validate that we can look up required transforms
-    geometry_msgs::TransformStamped dummy;
+    geometry_msgs::msg::TransformStamped dummy;
     if (!capture(dummy))
     {
       throw std::runtime_error("Transform from " + base_frame_ + " to " + tool_frame_ + " not available");
     }
   }
 
-  bool capture(geometry_msgs::TransformStamped& out)
+  bool capture(geometry_msgs::msg::TransformStamped& out)
   {
     try
     {
-      geometry_msgs::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, rclcpp::Clock().now(), std::chrono::seconds(3));
+      geometry_msgs::msg::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, rclcpp::Clock().now(), std::chrono::seconds(3));
       out = t;
       return true;
     }
@@ -70,7 +72,7 @@ public:
     im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
   }
 
-  void onNewImage(const sensor_msgs::ImageConstPtr& msg)
+  void onNewImage(const sensor_msgs::msg::ImageConstPtr& msg)
   {
 //    ROS_INFO_STREAM("New image");
     RCLCPP_INFO(node_->get_logger(), "New image");
@@ -79,16 +81,16 @@ public:
     {
       if(msg->encoding == "mono16")
       {
-        cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
+        cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::msg::image_encodings::MONO16);
 
         cv::Mat img_conv;
         cv::cvtColor(temp_ptr->image, img_conv, CV_GRAY2BGR);
         img_conv.convertTo(img_conv, CV_8UC1);
-        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::image_encodings::BGR8, img_conv));
+        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::msg::image_encodings::BGR8, img_conv));
       }
       else
       {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::msg::image_encodings::BGR8);
       }
 
       auto obs = finder_.findObservations(cv_ptr->image);
@@ -164,7 +166,7 @@ struct DataCollection
   bool onTrigger(std_srvs::srv::Empty::Request&, std_srvs::srv::Empty::Response&)
   {
     RCLCPP_INFO(node_->get_logger(), "Pose/Image capture triggered...");
-    geometry_msgs::TransformStamped pose;
+    geometry_msgs::msg::TransformStamped pose;
     cv::Mat image;
 
     if (tf_monitor.capture(pose) && image_monitor.capture(image))
@@ -208,7 +210,7 @@ struct DataCollection
 //  ros::ServiceServer trigger_server;
 //  ros::ServiceServer save_server;
 
-  std::vector<geometry_msgs::TransformStamped> poses;
+  std::vector<geometry_msgs::msg::TransformStamped> poses;
   std::vector<cv::Mat> images;
 
   TransformMonitor tf_monitor;

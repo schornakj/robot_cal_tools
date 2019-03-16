@@ -22,6 +22,7 @@ find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(std_srvs REQUIRED)
 
 
 ###########
@@ -40,30 +41,32 @@ target_include_directories(${PROJECT_NAME}_data_loader PUBLIC
   "$<INSTALL_INTERFACE:include>"
   ${rct_image_tools_INCLUDE_DIRS}
   ${rclcpp_INCLUDE_DIRS}
+  ${std_srvs_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}_data_loader
  yaml-cpp
  ${OpenCV_LIBRARIES}
  ${rclcpp_LIBRARIES}
+ ${std_srvs_LIBRARIES}
 
 )
 
 # Executable for collecting data sets via subscribers and triggered with services
 # See readme (TODO: Write a readme)
-#add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
+add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
 
-#set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
+set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
 
-#target_include_directories(${PROJECT_NAME}_cmd PUBLIC
-#  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-#  "$<INSTALL_INTERFACE:include>"
-#)
+target_include_directories(${PROJECT_NAME}_cmd PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
+)
 
-#target_link_libraries(${PROJECT_NAME}_cmd
-# ${catkin_LIBRARIES}
-# ${PROJECT_NAME}_data_loader
-#)
+target_link_libraries(${PROJECT_NAME}_cmd
+ ${catkin_LIBRARIES}
+ ${PROJECT_NAME}_data_loader
+)
 
 ament_export_include_directories(
     include
@@ -97,11 +100,11 @@ install(TARGETS ${PROJECT_NAME}_data_loader EXPORT ${PROJECT_NAME}_data_loader
   RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
 )
 
-#install(TARGETS ${PROJECT_NAME}_cmd EXPORT ${PROJECT_NAME}_cmd
-#  ARCHIVE DESTINATION ${ROS_LIB_DESTINATION}
-#  LIBRARY DESTINATION ${ROS_LIB_DESTINATION}
-#  RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
-#)
+install(TARGETS ${PROJECT_NAME}_cmd EXPORT ${PROJECT_NAME}_cmd
+  ARCHIVE DESTINATION ${ROS_LIB_DESTINATION}
+  LIBRARY DESTINATION ${ROS_LIB_DESTINATION}
+  RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
+)
 
 install(DIRECTORY include/${PROJECT_NAME}
   DESTINATION ${ROS_INCLUDE_DESTINATION}
