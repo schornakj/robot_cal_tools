@@ -17,6 +17,12 @@ rct_image_tools::ArucoGridBoardObservationFinder::findObservations(const cv::Mat
 
   cv::aruco::detectMarkers(image, board_.dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
 
+  if (marker_ids.size() == 0)
+  {
+      // Return empty optional if no marker corners found
+      return {};
+  }
+
   for(int i = 0; i < marker_ids.size(); i++)
   {
     std::vector<cv::Point2f> corner_pts = marker_corners[i];
@@ -28,7 +34,8 @@ rct_image_tools::ArucoGridBoardObservationFinder::findObservations(const cv::Mat
     }
     map_ids_to_obs_corners.insert(std::make_pair(marker_ids[i], obs_pts));
   }
-  return map_ids_to_obs_corners;
+  return boost::optional<std::map<int, std::vector<Eigen::Vector2d>>>(map_ids_to_obs_corners);
+//  return map_ids_to_obs_corners;
 }
 
 cv::Mat
