@@ -35,7 +35,6 @@ rct_image_tools::ArucoGridBoardObservationFinder::findObservations(const cv::Mat
     map_ids_to_obs_corners.insert(std::make_pair(marker_ids[i], obs_pts));
   }
   return boost::optional<std::map<int, std::vector<Eigen::Vector2d>>>(map_ids_to_obs_corners);
-//  return map_ids_to_obs_corners;
 }
 
 cv::Mat
