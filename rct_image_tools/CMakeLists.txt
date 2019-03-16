@@ -7,12 +7,13 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra --verbose)
+  add_compile_options(-Wall -Wextra)
 endif()
 
 find_package(OpenCV REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rct_optimizations REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ###########
 ## Build ##
@@ -32,6 +33,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<INSTALL_INTERFACE:include>"
   ${rct_optimizations_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -79,7 +81,7 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}
   RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
+install(DIRECTORY include/${PROJECT_NAME}
   DESTINATION ${ROS_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE

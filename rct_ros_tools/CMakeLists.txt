@@ -1,40 +1,32 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(rct_ros_tools)
 
-add_compile_options(-std=c++11 -Wall -Wextra)
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
-find_package(catkin REQUIRED COMPONENTS
-  rct_image_tools
-  rct_optimizations
-  roscpp
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra)
+endif()
 
-  # TODO: Export these to a different package dedicated to 'ros tools'
-  tf2_ros
-  cv_bridge
-  image_transport
-  eigen_conversions
-)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
 
+find_package(rct_image_tools REQUIRED)
+find_package(rct_optimizations REQUIRED)
+
+# TODO: Export these to a different package dedicated to 'ros tools'
+find_package(tf2_ros REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(tf2_eigen REQUIRED)
 find_package(OpenCV REQUIRED)
 
-# This package only provides examples. It does not export any tools.
-catkin_package(
-  INCLUDE_DIRS
-    include
-  LIBRARIES
-    ${PROJECT_NAME}_data_loader
-    yaml-cpp
-  CATKIN_DEPENDS
-    roscpp
-)
 
 ###########
 ## Build ##
 ###########
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
 # Create a library for loading and saving "data sets": directory based
 # archives of poses and images that can be reloaded for testing and
@@ -43,25 +35,49 @@ add_library(${PROJECT_NAME}_data_loader
   src/data_loader/data_set.cpp
   src/data_loader/parameter_loaders.cpp)
 
-add_dependencies(${PROJECT_NAME}_data_loader ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(${PROJECT_NAME}_data_loader PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include>"
+  ${rct_image_tools_INCLUDE_DIRS}
+  ${rclcpp_INCLUDE_DIRS}
+)
 
 target_link_libraries(${PROJECT_NAME}_data_loader
  yaml-cpp
  ${OpenCV_LIBRARIES}
+ ${rclcpp_LIBRARIES}
+
 )
 
 # Executable for collecting data sets via subscribers and triggered with services
 # See readme (TODO: Write a readme)
-add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
+#add_executable(${PROJECT_NAME}_cmd src/command_line_cal.cpp)
 
-set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
+#set_target_properties(${PROJECT_NAME}_cmd PROPERTIES OUTPUT_NAME command_line_data_collection PREFIX "")
 
-add_dependencies(${PROJECT_NAME}_cmd ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_include_directories(${PROJECT_NAME}_cmd PUBLIC
+#  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+#  "$<INSTALL_INTERFACE:include>"
+#)
 
-target_link_libraries(${PROJECT_NAME}_cmd
- ${catkin_LIBRARIES}
- ${PROJECT_NAME}_data_loader
-)
+#target_link_libraries(${PROJECT_NAME}_cmd
+# ${catkin_LIBRARIES}
+# ${PROJECT_NAME}_data_loader
+#)
+
+ament_export_include_directories(
+    include
+    ${rct_image_tools_INCLUDE_DIRS}
+    ${rclcpp_INCLUDE_DIRS})
+
+ament_export_libraries(
+    ${PROJECT_NAME}_data_loader
+    yaml-cpp)
+
+ament_export_dependencies(
+    rclcpp)
+
+ament_package()
 
 #############
 ## Testing ##
@@ -71,10 +87,24 @@ target_link_libraries(${PROJECT_NAME}_cmd
 ## Install ##
 #############
 
-install(TARGETS
-    ${PROJECT_NAME}_data_loader
-    ${PROJECT_NAME}_cmd
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+set(ROS_LIB_DESTINATION lib)
+set(ROS_BIN_DESTINATION bin)
+set(ROS_INCLUDE_DESTINATION include)
+
+install(TARGETS ${PROJECT_NAME}_data_loader EXPORT ${PROJECT_NAME}_data_loader
+  ARCHIVE DESTINATION ${ROS_LIB_DESTINATION}
+  LIBRARY DESTINATION ${ROS_LIB_DESTINATION}
+  RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
+)
+
+#install(TARGETS ${PROJECT_NAME}_cmd EXPORT ${PROJECT_NAME}_cmd
+#  ARCHIVE DESTINATION ${ROS_LIB_DESTINATION}
+#  LIBRARY DESTINATION ${ROS_LIB_DESTINATION}
+#  RUNTIME DESTINATION ${ROS_BIN_DESTINATION}
+#)
+
+install(DIRECTORY include/${PROJECT_NAME}
+  DESTINATION ${ROS_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
 )
