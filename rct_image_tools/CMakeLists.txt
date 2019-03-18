@@ -7,10 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra)
+  add_compile_options(-Wall -Wextra --verbose)
 endif()
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3.4.5 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rct_optimizations REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -34,11 +34,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   "$<INSTALL_INTERFACE:include>"
   ${rct_optimizations_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
-#  ${catkin_LIBRARIES}
-  ${OpenCV_LIBRARIES}
+  ${OpenCV_LIBS}
   ${rct_optimizations_LIBRARIES}
 )
 
@@ -47,7 +47,6 @@ add_executable(${PROJECT_NAME}_test
 )
 
 target_link_libraries(${PROJECT_NAME}_test
-#  ${catkin_LIBRARIES}
   ${PROJECT_NAME}
 )
 
@@ -56,10 +55,14 @@ target_link_libraries(${PROJECT_NAME}_test
 #############
 
 ament_export_include_directories(
-    include)
+    include
+    ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIR}
+    )
 
 ament_export_libraries(
-    ${PROJECT_NAME})
+    ${PROJECT_NAME}
+    ${OpenCV_LIBS})
 
 ament_export_dependencies(
     rct_optimizations

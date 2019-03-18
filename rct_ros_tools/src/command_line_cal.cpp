@@ -4,6 +4,9 @@
 #include <rct_ros_tools/parameter_loaders.h>
 
 #include <tf2_ros/transform_listener.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 #include <opencv2/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
@@ -22,7 +25,8 @@ public:
     : node_(node)
     , base_frame_(base_frame)
     , tool_frame_(tool_frame)
-    , buffer_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME))
+    , clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME))
+    , buffer_(clock_)
     , listener_(buffer_)
   {
     // Validate that we can look up required transforms
@@ -37,7 +41,7 @@ public:
   {
     try
     {
-      geometry_msgs::msg::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, rclcpp::Clock().now(), std::chrono::seconds(3));
+      geometry_msgs::msg::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, tf2::TimePointZero, tf2::Duration(std::chrono::seconds(3)));
       out = t;
       return true;
     }
@@ -55,6 +59,7 @@ private:
   std::string tool_frame_;
 
   std::shared_ptr<rclcpp::Node> node_;
+  std::shared_ptr<rclcpp::Clock> clock_;
   tf2_ros::Buffer buffer_;
   tf2_ros::TransformListener listener_;
 };
@@ -72,7 +77,7 @@ public:
     im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
   }
 
-  void onNewImage(const sensor_msgs::msg::ImageConstPtr& msg)
+  void onNewImage(const sensor_msgs::msg::Image::ConstPtr& msg)
   {
 //    ROS_INFO_STREAM("New image");
     RCLCPP_INFO(node_->get_logger(), "New image");
@@ -81,16 +86,16 @@ public:
     {
       if(msg->encoding == "mono16")
       {
-        cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::msg::image_encodings::MONO16);
+        cv_bridge::CvImagePtr temp_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::MONO16);
 
         cv::Mat img_conv;
         cv::cvtColor(temp_ptr->image, img_conv, CV_GRAY2BGR);
         img_conv.convertTo(img_conv, CV_8UC1);
-        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::msg::image_encodings::BGR8, img_conv));
+        cv_ptr = cv_bridge::CvImagePtr(new cv_bridge::CvImage(temp_ptr->header, sensor_msgs::image_encodings::BGR8, img_conv));
       }
       else
       {
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::msg::image_encodings::BGR8);
+        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       }
 
       auto obs = finder_.findObservations(cv_ptr->image);
@@ -150,9 +155,9 @@ struct DataCollection
   DataCollection(const DataCollectionConfig& config, std::shared_ptr<rclcpp::Node> node)
     : node_(node)
     , trigger_server_(node -> create_service<std_srvs::srv::Empty>("collect", std::bind(&DataCollection::onTrigger, this, std::placeholders::_1, std::placeholders::_2)))
-    , save_server_(node -> create_service<std_srvs::srv::Empty>("save", std::bind(&DataCollection::onSave, this, std::placeholders::_1, std::placeholders::_2)))
-    , tf_monitor(config.base_frame, config.tool_frame)
-    , image_monitor(config.target, config.image_topic)
+    , save_server_(node ->    create_service<std_srvs::srv::Empty>("save",    std::bind(&DataCollection::onSave,    this, std::placeholders::_1, std::placeholders::_2)))
+    , tf_monitor(config.base_frame, config.tool_frame, node_)
+    , image_monitor(config.target, config.image_topic, node_)
     , save_dir_(config.save_dir)
   {
 //    ros::NodeHandle nh;
@@ -163,7 +168,7 @@ struct DataCollection
 //    ROS_INFO_STREAM("Call " << save_server.getService() << " to save the captured data");
   }
 
-  bool onTrigger(std_srvs::srv::Empty::Request&, std_srvs::srv::Empty::Response&)
+  void onTrigger(std_srvs::srv::Empty::Request::SharedPtr, std_srvs::srv::Empty::Response::SharedPtr res)
   {
     RCLCPP_INFO(node_->get_logger(), "Pose/Image capture triggered...");
     geometry_msgs::msg::TransformStamped pose;
@@ -171,27 +176,29 @@ struct DataCollection
 
     if (tf_monitor.capture(pose) && image_monitor.capture(image))
     {
-      poses.push_back(pose);
-      images.push_back(image);
+      poses_.push_back(pose);
+      images_.push_back(image);
       RCLCPP_INFO(node_->get_logger(), "Data collected successfully");
-      return true;
+//      res->success = true;
     }
     else
     {
       RCLCPP_WARN(node_->get_logger(), "Failed to capture pose/image pair");
-      return false;
+//      res->success = false;
     }
   }
 
-  bool onSave(std_srvs::srv::Empty::Request&, std_srvs::srv::Empty::Response&)
+  void onSave(std_srvs::srv::Empty::Request::SharedPtr, std_srvs::srv::Empty::Response::SharedPtr res)
   {
     rct_ros_tools::ExtrinsicDataSet data;
-    for (std::size_t i = 0; i < poses.size(); ++i)
+    for (std::size_t i = 0; i < poses_.size(); ++i)
     {
-      cv::Mat image = images[i];
-      auto msg = poses[i];
-      Eigen::Affine3d pose;
-      tf::transformMsgToEigen(msg.transform, pose);
+      cv::Mat image = images_[i];
+      auto msg = poses_[i];
+
+      Eigen::Affine3d pose = tf2::transformToEigen(msg);
+//      tf2::fromMsg(msg.transform, pose);
+//      tf2::transformMsgToEigen(msg.transform, pose);
 
       data.images.push_back(image);
       data.tool_poses.push_back(pose);
@@ -199,7 +206,7 @@ struct DataCollection
 
 //    ROS_INFO_STREAM("Saving data-set to " << save_dir_);
     rct_ros_tools::saveToDirectory(save_dir_, data);
-    return true;
+//    res->success = true;
   }
 
   std::shared_ptr<rclcpp::Node> node_;
@@ -210,8 +217,8 @@ struct DataCollection
 //  ros::ServiceServer trigger_server;
 //  ros::ServiceServer save_server;
 
-  std::vector<geometry_msgs::msg::TransformStamped> poses;
-  std::vector<cv::Mat> images;
+  std::vector<geometry_msgs::msg::TransformStamped> poses_;
+  std::vector<cv::Mat> images_;
 
   TransformMonitor tf_monitor;
   ImageMonitor image_monitor;
@@ -261,7 +268,7 @@ int main(int argc, char** argv)
 //    return 1;
 //  }
 
-  DataCollection dc (config);
+  DataCollection dc (config, node);
   rclcpp::spin(node);
   return 0;
 }
