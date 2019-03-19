@@ -16,6 +16,8 @@
 
 #include <rct_image_tools/image_observation_finder.h>
 
+#include <rct_image_tools/modified_circle_grid_target.h>
+
 #include <vector>
 
 class TransformMonitor
@@ -72,6 +74,7 @@ public:
                rclcpp::Node::SharedPtr node)
     : finder_(finder)
     , it_(node)
+    , node_(node)
   {
     im_sub_ = it_.subscribe(nominal_image_topic, 1, &ImageMonitor::onNewImage, this);
     im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
@@ -98,17 +101,21 @@ public:
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       }
 
-      auto obs = finder_.findObservations(cv_ptr->image);
-      if (obs)
-      {
-        auto modified = finder_.drawObservations(cv_ptr->image, *obs);
-        cv_bridge::CvImagePtr ptr (new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
-        im_pub_.publish(ptr->toImageMsg());
-      }
-      else
-      {
-        im_pub_.publish(cv_ptr->toImageMsg());
-      }
+//      auto obs = finder_.findObservations(cv_ptr->image);
+//      if (obs)
+//      {
+//        auto modified = finder_.drawObservations(cv_ptr->image, *obs);
+//        cv_bridge::CvImagePtr ptr (new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
+//        im_pub_.publish(ptr->toImageMsg());
+//      }
+//      else
+//      {
+//        im_pub_.publish(cv_ptr->toImageMsg());
+//      }
+
+      im_pub_.publish(cv_ptr->toImageMsg());
+
+
       last_frame_ = cv_ptr;
     }
     catch (cv_bridge::Exception& e)
@@ -262,6 +269,13 @@ int main(int argc, char** argv)
   if (!get(parameters_client, "tool_frame", config.tool_frame)) return 1;
   if (!get(parameters_client, "image_topic", config.image_topic)) return 1;
   if (!get(parameters_client, "save_dir", config.save_dir)) return 1;
+
+//  config.base_frame = "iiwa_link_0";
+//  config.tool_frame = "iiwa_link_ee";
+//  config.image_topic = "/camera/color/image_raw";
+//  config.save_dir = "/home/mrtd/cal_data";
+
+  config.target = rct_image_tools::ModifiedCircleGridTarget(5, 5, 0.01);
 //  if (!rct_ros_tools::loadTarget(parameters_client, "target_definition", config.target))
 //  {
 //    RCLCPP_ERROR(node->get_logger(), "Must provide parameters to load target!");
