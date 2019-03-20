@@ -43,7 +43,7 @@ static rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::
     const auto pose_path = root[i]["pose"].as<std::string>();
     cv::Mat image = readImageOpenCV(combine(root_path, img_path));
     Eigen::Affine3d p;
-//    rct_ros_tools::loadPose(combine(root_path, pose_path), p);
+    rct_ros_tools::loadPose(combine(root_path, pose_path), p);
 
     data.images.push_back(image);
     data.tool_poses.push_back(p);
