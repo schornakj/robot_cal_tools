@@ -10,7 +10,6 @@
 #include <opencv2/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <image_transport/image_transport.h>
-//#include <eigen_conversions/eigen_msg.h>
 
 #include <std_srvs/srv/empty.hpp>
 
@@ -20,70 +19,44 @@
 
 #include <vector>
 
-class TransformMonitor
+class DataCollection : public rclcpp::Node
 {
 public:
-  TransformMonitor(const std::string& base_frame, const std::string& tool_frame, std::shared_ptr<rclcpp::Node> node)
-    : node_(node)
-    , base_frame_(base_frame)
-    , tool_frame_(tool_frame)
+  explicit DataCollection()
+    : Node("command_line_cal_node")
     , clock_(std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME))
     , buffer_(clock_)
     , listener_(buffer_)
+    , finder_(rct_image_tools::ModifiedCircleGridTarget(5, 5, 0.01))
   {
+    this->declare_parameter("base_frame");
+    this->declare_parameter("tool_frame");
+    this->declare_parameter("image_topic");
+    this->declare_parameter("save_dir");
+
+    if (!this->get_parameter("base_frame", base_frame_)) throw(std::runtime_error("Couldn't load parameter"));
+    if (!this->get_parameter("tool_frame", tool_frame_)) throw(std::runtime_error("Couldn't load parameter"));
+    if (!this->get_parameter("image_topic", image_topic_)) throw(std::runtime_error("Couldn't load parameter"));
+    if (!this->get_parameter("save_dir", save_dir_)) throw(std::runtime_error("Couldn't load parameter"));
+
     // Validate that we can look up required transforms
     geometry_msgs::msg::TransformStamped dummy;
-    if (!capture(dummy))
+    if (!captureTransform(dummy))
     {
       throw std::runtime_error("Transform from " + base_frame_ + " to " + tool_frame_ + " not available");
     }
-  }
 
-  bool capture(geometry_msgs::msg::TransformStamped& out)
-  {
-    try
-    {
-      geometry_msgs::msg::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, tf2::TimePointZero, tf2::Duration(std::chrono::seconds(3)));
-      out = t;
-      return true;
-    }
-    catch (const tf2::TransformException& ex)
-    {
-      RCLCPP_WARN(node_->get_logger(), "Failed to compute transform");
-//      ROS_WARN_STREAM("Failed to compute transfrom between " << base_frame_ << " and " << tool_frame_ << ": "
-//                      << ex.what());
-      return false;
-    }
+    it_sub_ = image_transport::create_subscription(this, image_topic_, std::bind(&DataCollection::onNewImage, this, std::placeholders::_1), "raw");
+    it_pub_ = image_transport::create_publisher(this, image_topic_ + "_out");
+
+    trigger_server_ = this->create_service<std_srvs::srv::Empty>("collect", std::bind(&DataCollection::onTrigger, this, std::placeholders::_1, std::placeholders::_2));
+    save_server_ = this->create_service<std_srvs::srv::Empty>("save", std::bind(&DataCollection::onSave, this, std::placeholders::_1, std::placeholders::_2));
   }
 
 private:
-  std::string base_frame_;
-  std::string tool_frame_;
-
-  std::shared_ptr<rclcpp::Node> node_;
-  std::shared_ptr<rclcpp::Clock> clock_;
-  tf2_ros::Buffer buffer_;
-  tf2_ros::TransformListener listener_;
-};
-
-class ImageMonitor
-{
-public:
-  ImageMonitor(const rct_image_tools::ModifiedCircleGridObservationFinder& finder,
-               const std::string& nominal_image_topic,
-               rclcpp::Node::SharedPtr node)
-    : finder_(finder)
-    , it_(node)
-    , node_(node)
-  {
-    im_sub_ = it_.subscribe(nominal_image_topic, 1, &ImageMonitor::onNewImage, this);
-    im_pub_ = it_.advertise(nominal_image_topic + "_observer", 1);
-  }
-
   void onNewImage(const sensor_msgs::msg::Image::ConstPtr& msg)
   {
-//    ROS_INFO_STREAM("New image");
-    RCLCPP_INFO(node_->get_logger(), "New image");
+    RCLCPP_INFO(this->get_logger(), "New image");
     cv_bridge::CvImagePtr cv_ptr;
     try
     {
@@ -101,97 +74,30 @@ public:
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       }
 
-//      auto obs = finder_.findObservations(cv_ptr->image);
-//      if (obs)
-//      {
-//        auto modified = finder_.drawObservations(cv_ptr->image, *obs);
-//        cv_bridge::CvImagePtr ptr (new cv_bridge::CvImage(cv_ptr->header, cv_ptr->encoding, modified));
-//        im_pub_.publish(ptr->toImageMsg());
-//      }
-//      else
-//      {
-//        im_pub_.publish(cv_ptr->toImageMsg());
-//      }
-
-      im_pub_.publish(cv_ptr->toImageMsg());
-
-
       last_frame_ = cv_ptr;
     }
     catch (cv_bridge::Exception& e)
     {
-      RCLCPP_ERROR(node_->get_logger(), "BAD THING HAPPEND");
-//      ROS_ERROR("cv_bridge exception: %s", e.what());
+      RCLCPP_ERROR(this->get_logger(), "BAD THING HAPPEND");
       return;
     }
   }
 
-  bool capture(cv::Mat& frame)
-  {
-    if (last_frame_)
-    {
-      frame = last_frame_->image;
-      return true;
-    }
-    return false;
-  }
-
-private:
-  rclcpp::Node::SharedPtr node_;
-  rct_image_tools::ModifiedCircleGridObservationFinder finder_;
-  image_transport::ImageTransport it_;
-  image_transport::Subscriber im_sub_;
-  image_transport::Publisher im_pub_;
-  cv_bridge::CvImagePtr last_frame_;
-};
-
-struct DataCollectionConfig
-{
-  std::string base_frame;
-  std::string tool_frame;
-
-  std::string image_topic;
-  rct_image_tools::ModifiedCircleGridTarget target;
-
-  std::string save_dir;
-};
-
-struct DataCollection
-{
-
-  DataCollection(const DataCollectionConfig& config, std::shared_ptr<rclcpp::Node> node)
-    : node_(node)
-    , trigger_server_(node -> create_service<std_srvs::srv::Empty>("collect", std::bind(&DataCollection::onTrigger, this, std::placeholders::_1, std::placeholders::_2)))
-    , save_server_(node ->    create_service<std_srvs::srv::Empty>("save",    std::bind(&DataCollection::onSave,    this, std::placeholders::_1, std::placeholders::_2)))
-    , tf_monitor(config.base_frame, config.tool_frame, node_)
-    , image_monitor(config.target, config.image_topic, node_)
-    , save_dir_(config.save_dir)
-  {
-//    ros::NodeHandle nh;
-//    trigger_server = nh.advertiseService("collect", &DataCollection::onTrigger, this);
-//    save_server = nh.advertiseService("save", &DataCollection::onSave, this);
-
-//    ROS_INFO_STREAM("Call " << trigger_server.getService() << " to capture a pose/image pair");
-//    ROS_INFO_STREAM("Call " << save_server.getService() << " to save the captured data");
-  }
-
   void onTrigger(std_srvs::srv::Empty::Request::SharedPtr, std_srvs::srv::Empty::Response::SharedPtr res)
   {
-    RCLCPP_INFO(node_->get_logger(), "Pose/Image capture triggered...");
+    RCLCPP_INFO(this->get_logger(), "Pose/Image capture triggered...");
     geometry_msgs::msg::TransformStamped pose;
     cv::Mat image;
 
-    if (tf_monitor.capture(pose) && image_monitor.capture(image))
+    if (captureTransform(pose) && captureImage(image))
     {
       poses_.push_back(pose);
       images_.push_back(image);
-      RCLCPP_INFO(node_->get_logger(), "Data collected successfully");
-//      res->success = true;
+      RCLCPP_INFO(this->get_logger(), "Data collected successfully");
     }
     else
     {
-      RCLCPP_WARN(node_->get_logger(), "Failed to capture pose/image pair");
-//      res->success = false;
+      RCLCPP_WARN(this->get_logger(), "Failed to capture pose/image pair");
     }
   }
 
@@ -204,31 +110,59 @@ struct DataCollection
       auto msg = poses_[i];
 
       Eigen::Affine3d pose = tf2::transformToEigen(msg);
-//      tf2::fromMsg(msg.transform, pose);
-//      tf2::transformMsgToEigen(msg.transform, pose);
-
       data.images.push_back(image);
       data.tool_poses.push_back(pose);
     }
-
-//    ROS_INFO_STREAM("Saving data-set to " << save_dir_);
     rct_ros_tools::saveToDirectory(save_dir_, data);
-//    res->success = true;
   }
 
-  std::shared_ptr<rclcpp::Node> node_;
+  bool captureImage(cv::Mat& frame)
+  {
+    if (last_frame_)
+    {
+      frame = last_frame_->image;
+      return true;
+    }
+    return false;
+  }
 
+  bool captureTransform(geometry_msgs::msg::TransformStamped& out)
+  {
+    try
+    {
+      geometry_msgs::msg::TransformStamped t = buffer_.lookupTransform(base_frame_, tool_frame_, tf2::TimePointZero, tf2::Duration(std::chrono::seconds(10)));
+      out = t;
+      return true;
+    }
+    catch (const tf2::TransformException& ex)
+    {
+      RCLCPP_WARN(this->get_logger(), "Failed to compute transform");
+//      ROS_WARN_STREAM("Failed to compute transfrom between " << base_frame_ << " and " << tool_frame_ << ": "
+//                      << ex.what());
+      return false;
+    }
+  }
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr trigger_server_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr save_server_;
 
-//  ros::ServiceServer trigger_server;
-//  ros::ServiceServer save_server;
+  image_transport::Subscriber it_sub_;
+  image_transport::Publisher it_pub_;
+
+  std::string base_frame_;
+  std::string tool_frame_;
+
+  std::string image_topic_;
 
   std::vector<geometry_msgs::msg::TransformStamped> poses_;
   std::vector<cv::Mat> images_;
 
-  TransformMonitor tf_monitor;
-  ImageMonitor image_monitor;
+  std::shared_ptr<rclcpp::Clock> clock_;
+  tf2_ros::Buffer buffer_;
+  tf2_ros::TransformListener listener_;
+
+  rct_image_tools::ModifiedCircleGridObservationFinder finder_;
+
+  cv_bridge::CvImagePtr last_frame_;
 
   std::string save_dir_;
 };
@@ -249,40 +183,10 @@ bool get(const rclcpp::SyncParametersClient::SharedPtr& pc, const std::string& k
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("command_line_cal_node");
 
-  auto parameters_client = std::make_shared<rclcpp::SyncParametersClient>(node);
-  while (!parameters_client->wait_for_service(std::chrono::seconds(1))) {
-    if (!rclcpp::ok()) {
-      RCLCPP_ERROR(node->get_logger(), "Interrupted while waiting for the service. Exiting.");
-      return 0;
-    }
-    RCLCPP_INFO(node->get_logger(), "service not available, waiting again...");
-  }
-//  ros::init(argc, argv, "rct_examples");
-//  ros::NodeHandle pnh ("~");
+  auto node = std::make_shared<DataCollection>();
 
-  // Load data collection parameters
-  DataCollectionConfig config;
-
-  if (!get(parameters_client, "base_frame", config.base_frame)) return 1;
-  if (!get(parameters_client, "tool_frame", config.tool_frame)) return 1;
-  if (!get(parameters_client, "image_topic", config.image_topic)) return 1;
-  if (!get(parameters_client, "save_dir", config.save_dir)) return 1;
-
-//  config.base_frame = "iiwa_link_0";
-//  config.tool_frame = "iiwa_link_ee";
-//  config.image_topic = "/camera/color/image_raw";
-//  config.save_dir = "/home/mrtd/cal_data";
-
-  config.target = rct_image_tools::ModifiedCircleGridTarget(5, 5, 0.01);
-//  if (!rct_ros_tools::loadTarget(parameters_client, "target_definition", config.target))
-//  {
-//    RCLCPP_ERROR(node->get_logger(), "Must provide parameters to load target!");
-//    return 1;
-//  }
-
-  DataCollection dc (config, node);
   rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }
