@@ -7,10 +7,10 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra --verbose)
+  add_compile_options(-Wall -Wextra)
 endif()
 
-find_package(OpenCV 3.4.5 REQUIRED)
+find_package(OpenCV 3 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rct_optimizations REQUIRED)
 find_package(Eigen3 REQUIRED)

@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra --verbose)
+  add_compile_options(-Wall -Wextra)
 endif()
 
 find_package(ament_cmake REQUIRED)
@@ -15,7 +15,7 @@ find_package(rclcpp REQUIRED)
 
 find_package(rct_image_tools REQUIRED)
 find_package(rct_optimizations REQUIRED)
-find_package(OpenCV 3.4.5 REQUIRED COMPONENTS features2d core calib3d)
+find_package(OpenCV 3 REQUIRED COMPONENTS features2d core calib3d)
 
 message(WARNING ${OpenCV_VERSION})
 message(WARNING ${OpenCV_LIBS})
