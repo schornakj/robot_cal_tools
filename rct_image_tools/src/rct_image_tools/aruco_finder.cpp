@@ -1,6 +1,6 @@
 #include "rct_image_tools/aruco_finder.h"
 
-rct_image_tools::ArucoGridBoardObservationFinder::ArucoGridBoardObservationFinder(const cv::aruco::GridBoard& board)
+rct_image_tools::ArucoGridBoardObservationFinder::ArucoGridBoardObservationFinder(const cv::Ptr<cv::aruco::GridBoard>& board)
     : board_(board)
 {
 
@@ -15,7 +15,8 @@ rct_image_tools::ArucoGridBoardObservationFinder::findObservations(const cv::Mat
   std::vector<int> marker_ids;
   cv::Ptr<cv::aruco::DetectorParameters> parameters(new cv::aruco::DetectorParameters);
 
-  cv::aruco::detectMarkers(image, board_.dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
+  cv::aruco::detectMarkers(image, board_->dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
+  cv::aruco::refineDetectedMarkers(image, board_, marker_corners, marker_ids, rejected_candidates);
 
   if (marker_ids.size() == 0)
   {
@@ -55,14 +56,14 @@ rct_image_tools::ArucoGridBoardObservationFinder::drawObservations(const cv::Mat
 }
 
 std::map<int, std::vector<Eigen::Vector3d>>
-rct_image_tools::mapArucoIdsToObjPts(const cv::aruco::GridBoard& board)
+rct_image_tools::mapArucoIdsToObjPts(const cv::Ptr<cv::aruco::GridBoard> &board)
 {
   std::map<int, std::vector<Eigen::Vector3d>> map_ids_to_corners;
-  for (int i = 0; i < board.ids.size(); i++)
+  for (int i = 0; i < board->ids.size(); i++)
   {
-    std::vector<Eigen::Vector3d> obj_pts(board.objPoints[i].size());
-    std::transform(board.objPoints[i].begin(), board.objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3d(o.x, o.y, o.z); });
-    map_ids_to_corners.insert(std::make_pair(board.ids[i], obj_pts));
+    std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
+    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3d(o.x, o.y, o.z); });
+    map_ids_to_corners.insert(std::make_pair(board->ids[i], obj_pts));
 //    std::printf("ID: %i\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n",  board.ids[i],
 //                obj_pts[0][0], obj_pts[0][1], obj_pts[0][2],
 //                obj_pts[1][0], obj_pts[1][1], obj_pts[1][2],
