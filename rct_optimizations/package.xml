@@ -16,9 +16,9 @@
 
   <license>Apache 2.0</license>
 
-  <buildtool_depend>ament</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
-  <depend>Ceres</depend>
+  <depend>libceres-dev</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

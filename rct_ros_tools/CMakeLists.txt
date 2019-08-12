@@ -110,7 +110,9 @@ ament_export_include_directories(
     ${tf2_eigen_INCLUDE_DIRS}
     ${cv_bridge_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
-    ${image_transport_INCLUDE_DIRS})
+    ${image_transport_INCLUDE_DIRS}
+    ${rct_image_tools_INCLUDE_DIRS}
+    )
 
 ament_export_libraries(
     yaml-cpp
@@ -122,6 +124,7 @@ ament_export_libraries(
     ${tf2_eigen_LIBRARIES}
     ${cv_bridge_LIBRARIES}
     ${image_transport_LIBRARIES}
+    ${rct_image_tools_LIBRARIES}
     )
 
 ament_export_dependencies(
