@@ -1,6 +1,7 @@
 #ifndef RCT_MODIFIED_CIRCLE_GRID_TARGET_H
 #define RCT_MODIFIED_CIRCLE_GRID_TARGET_H
 
+#include <vector>
 #include <Eigen/Dense>
 
 namespace rct_image_tools

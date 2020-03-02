@@ -1,6 +1,7 @@
 #ifndef RCT_DATA_SET_H
 #define RCT_DATA_SET_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core.hpp>

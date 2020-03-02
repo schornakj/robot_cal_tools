@@ -3,7 +3,7 @@
 #include "rct_image_tools/image_utils.h"
 
 #include <yaml-cpp/yaml.h>
-#include <ros/console.h>
+//#include <ros/console.h>
 
 #include <opencv2/highgui.hpp>
 
@@ -27,7 +27,7 @@ static cv::Mat readImageOpenCV(const std::string& path)
   cv::Mat image = cv::imread(path, CV_LOAD_IMAGE_COLOR); // TODO: Is CV_LOAD_IMAGE_COLOR needed?
   if (image.data == NULL)
   {
-    ROS_ERROR("File failed to load or does not exist: %s", path.c_str());
+//    ROS_ERROR("File failed to load or does not exist: %s", path.c_str());
   }
   return image;
 }
@@ -63,7 +63,7 @@ boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(co
   }
   catch (const YAML::Exception& ex)
   {
-    ROS_ERROR_STREAM("Error while parsing YAML file: " << ex.what());
+//    ROS_ERROR_STREAM("Error while parsing YAML file: " << ex.what());
     return {};
   }
 }
@@ -146,7 +146,7 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
       rct_optimizations::CorrespondenceSet obs_set = rct_image_tools::getCorrespondenceSet(obs_finder, data_set.images[i]);
       if (obs_set.empty())
       {
-        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
+//        ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
         mask_(c, i) = 0;
       }
 

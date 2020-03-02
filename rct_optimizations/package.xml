@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>rct_optimizations</name>
   <version>0.1.0</version>
   <description>The rct_optimizations package</description>
@@ -16,5 +16,11 @@
 
   <license>Apache 2.0</license>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>libceres-dev</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
