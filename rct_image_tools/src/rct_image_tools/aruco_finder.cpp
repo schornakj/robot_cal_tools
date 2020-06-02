@@ -23,14 +23,14 @@ rct_image_tools::ArucoGridBoardObservationFinder::findObservations(const cv::Mat
   cv::aruco::detectMarkers(image, board_->dictionary, marker_corners, marker_ids, parameters, rejected_candidates);
   cv::aruco::refineDetectedMarkers(image, board_, marker_corners, marker_ids, rejected_candidates);
 
-  for(int i = 0; i < marker_ids.size(); i++)
+  for(std::size_t i = 0; i < marker_ids.size(); i++)
   {
     std::vector<cv::Point2f> corner_pts = marker_corners[i];
 
     std::vector<Eigen::Vector2d> obs_pts(4);
-    for (int j = 0; j < corner_pts.size(); j++)
+    for (std::size_t j = 0; j < corner_pts.size(); j++)
     {
-      obs_pts[j] << corner_pts[j].x, corner_pts[j].y;
+      obs_pts[j] << static_cast<double>(corner_pts[j].x), static_cast<double>(corner_pts[j].y);
     }
     map_ids_to_obs_corners.insert(std::make_pair(marker_ids[i], obs_pts));
   }
@@ -58,10 +58,11 @@ std::map<int, std::vector<Eigen::Vector3d>>
 rct_image_tools::mapArucoIdsToObjPts(const cv::Ptr<cv::aruco::GridBoard> &board)
 {
   std::map<int, std::vector<Eigen::Vector3d>> map_ids_to_corners;
-  for (int i = 0; i < board->ids.size(); i++)
+  for (std::size_t i = 0; i < board->ids.size(); i++)
   {
     std::vector<Eigen::Vector3d> obj_pts(board->objPoints[i].size());
-    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(), [](const cv::Point3f& o) {return Eigen::Vector3d(o.x, o.y, o.z); });
+    std::transform(board->objPoints[i].begin(), board->objPoints[i].end(), obj_pts.begin(),
+                   [](const cv::Point3f& o) {return Eigen::Vector3d(static_cast<double>(o.x), static_cast<double>(o.y), static_cast<double>(o.z)); });
     map_ids_to_corners.insert(std::make_pair(board->ids[i], obj_pts));
   }
   return map_ids_to_corners;

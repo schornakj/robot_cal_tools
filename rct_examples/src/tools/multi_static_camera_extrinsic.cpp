@@ -71,7 +71,7 @@ int main(int argc, char** argv)
     ROS_ERROR("Must set '%s' parameter", "num_of_cameras");
     return 1;
   }
-  std::size_t num_of_cameras = camera_count;
+  std::size_t num_of_cameras = static_cast<std::size_t>(camera_count);
 
   rct_optimizations::ExtrinsicMultiStaticCameraMovingTargetProblem problem_def;
   std::vector<std::string> data_path;

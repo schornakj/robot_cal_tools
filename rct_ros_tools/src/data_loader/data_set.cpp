@@ -129,8 +129,8 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
                                                                               const rct_image_tools::ModifiedCircleGridObservationFinder &obs_finder,
                                                                               bool debug)
 {
-  correspondences_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
-  mask_.resize(extrinsic_data_set.size(), extrinsic_data_set[0].images.size());
+  correspondences_.resize(static_cast<Eigen::Index>(extrinsic_data_set.size()), static_cast<Eigen::Index>(extrinsic_data_set[0].images.size()));
+  mask_.resize(static_cast<Eigen::Index>(extrinsic_data_set.size()), static_cast<Eigen::Index>(extrinsic_data_set[0].images.size()));
   for (std::size_t c = 0; c < extrinsic_data_set.size(); ++c)
   {
     // We know it exists, so define a helpful alias
@@ -141,13 +141,13 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
     // Repeat for each image. We also tell where the wrist was when the image was taken.
     for (std::size_t i = 0; i < data_set.images.size(); ++i)
     {
-      mask_(c, i) = 1;
+      mask_(static_cast<Eigen::Index>(c), static_cast<Eigen::Index>(i)) = 1;
       // Try to find the circle grid in this image:
       rct_optimizations::CorrespondenceSet obs_set = rct_image_tools::getCorrespondenceSet(obs_finder, data_set.images[i]);
       if (obs_set.empty())
       {
         ROS_WARN_STREAM("Unable to find the circle grid in image: " << i);
-        mask_(c, i) = 0;
+        mask_(static_cast<Eigen::Index>(c), static_cast<Eigen::Index>(i)) = 0;
       }
 
       if (debug)
@@ -161,38 +161,38 @@ rct_ros_tools::ExtrinsicCorrespondenceDataSet::ExtrinsicCorrespondenceDataSet(co
         cv::waitKey();
       }
 
-      correspondences_(c, i) = obs_set;
+      correspondences_(static_cast<Eigen::Index>(c), static_cast<Eigen::Index>(i)) = obs_set;
     }
   }
 }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraCount() const
 {
-  return correspondences_.rows();
+  return static_cast<std::size_t>(correspondences_.rows());
 }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCount() const
 {
-  return correspondences_.cols();
+  return static_cast<std::size_t>(correspondences_.cols());
 }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getImageCameraCount(std::size_t image_index) const
 {
-  return mask_.col(image_index).sum();
+  return mask_.col(static_cast<Eigen::Index>(image_index)).sum();
 }
 
 std::size_t rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCameraImageCount(std::size_t camera_index) const
 {
-  return mask_.row(camera_index).sum();
+  return mask_.row(static_cast<Eigen::Index>(camera_index)).sum();
 }
 
 bool rct_ros_tools::ExtrinsicCorrespondenceDataSet::foundCorrespondence(std::size_t camera_index, std::size_t image_index) const
 {
-  return static_cast<bool>(mask_(camera_index, image_index));
+  return static_cast<bool>(mask_(static_cast<Eigen::Index>(camera_index), static_cast<Eigen::Index>(image_index)));
 }
 
 const rct_optimizations::CorrespondenceSet&
 rct_ros_tools::ExtrinsicCorrespondenceDataSet::getCorrespondenceSet(std::size_t camera_index, std::size_t image_index) const
 {
-  return correspondences_(camera_index, image_index);
+  return correspondences_(static_cast<Eigen::Index>(camera_index), static_cast<Eigen::Index>(image_index));
 }
