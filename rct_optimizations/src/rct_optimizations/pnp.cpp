@@ -65,7 +65,7 @@ rct_optimizations::PnPResult rct_optimizations::optimize(const rct_optimizations
 
     auto* cost_block = new ceres::AutoDiffCostFunction<SolvePnPCostFunc, 2, 6>(cost_fn);
 
-    problem.AddResidualBlock(cost_block, NULL, internal_camera_to_target.values.data());
+    problem.AddResidualBlock(cost_block, nullptr, internal_camera_to_target.values.data());
   }
 
   ceres::Solver::Options options;

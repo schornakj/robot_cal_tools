@@ -215,7 +215,7 @@ rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem&
 
       auto* cost_block = new ceres::AutoDiffCostFunction<IntrinsicCostFunction, 2, 6, 9>(cost_fn);
 
-      problem.AddResidualBlock(cost_block, NULL, internal_poses[i].values.data(),
+      problem.AddResidualBlock(cost_block, nullptr, internal_poses[i].values.data(),
                                internal_intrinsics_data.data());
     }
   }

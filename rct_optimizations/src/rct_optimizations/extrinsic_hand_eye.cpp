@@ -193,7 +193,7 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem2D3D& params)
           "transform guesses to more accurately represent the problem");
       }
 
-      problem.AddResidualBlock(cost_block, NULL, internal_camera_to_wrist.values.data(),
+      problem.AddResidualBlock(cost_block, nullptr, internal_camera_to_wrist.values.data(),
                                internal_base_to_target.values.data());
     }
   }
@@ -237,7 +237,7 @@ ExtrinsicHandEyeResult optimize(const ExtrinsicHandEyeProblem3D3D& params)
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ObservationCost3D3D, 3, 6, 6>(cost_fn);
 
-      problem.AddResidualBlock(cost_block, NULL, internal_camera_to_wrist.values.data(),
+      problem.AddResidualBlock(cost_block, nullptr, internal_camera_to_wrist.values.data(),
                                internal_base_to_target.values.data());
     }
   }

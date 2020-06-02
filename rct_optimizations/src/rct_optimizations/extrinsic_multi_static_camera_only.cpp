@@ -132,7 +132,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraO
 
           auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionFixedCameraCost, 2, 6>(cost_fn);
 
-          problem.AddResidualBlock(cost_block, NULL, internal_base_to_target[i].values.data());
+          problem.AddResidualBlock(cost_block, nullptr, internal_base_to_target[i].values.data());
         }
         else
         {
@@ -140,7 +140,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraO
 
           auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionFreeCameraCost, 2, 6, 6>(cost_fn);
 
-          problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base[c].values.data(),
+          problem.AddResidualBlock(cost_block, nullptr, internal_camera_to_base[c].values.data(),
                                    internal_base_to_target[i].values.data());
         }
       }

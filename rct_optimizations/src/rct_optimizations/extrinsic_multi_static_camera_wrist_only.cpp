@@ -94,7 +94,7 @@ rct_optimizations::optimize(const rct_optimizations::ExtrinsicMultiStaticCameraM
 
         auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6, 6>(cost_fn);
 
-        problem.AddResidualBlock(cost_block, NULL, internal_camera_to_base_correction.values.data(),
+        problem.AddResidualBlock(cost_block, nullptr, internal_camera_to_base_correction.values.data(),
                                  internal_wrist_to_target.values.data());
       }
     } // for each wrist pose

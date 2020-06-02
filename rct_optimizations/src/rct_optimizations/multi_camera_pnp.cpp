@@ -83,7 +83,7 @@ rct_optimizations::optimize(const rct_optimizations::MultiCameraPnPProblem& para
 
       auto* cost_block = new ceres::AutoDiffCostFunction<ReprojectionCost, 2, 6>(cost_fn);
 
-      problem.AddResidualBlock(cost_block, NULL, internal_base_to_target.values.data());
+      problem.AddResidualBlock(cost_block, nullptr, internal_base_to_target.values.data());
     }
   } // end for each camera
 
