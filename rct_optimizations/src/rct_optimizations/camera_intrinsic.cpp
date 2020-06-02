@@ -180,8 +180,7 @@ rct_optimizations::IntrinsicEstimationResult
 rct_optimizations::optimize(const rct_optimizations::IntrinsicEstimationProblem& params)
 {
   // Prepare data structure for the camera parameters to optimize
-  std::array<double, CalibCameraIntrinsics<double>::size()> internal_intrinsics_data;
-  for (int i = 0; i < 9; ++i) internal_intrinsics_data[i] = 0.0;
+  std::array<double, CalibCameraIntrinsics<double>::size()> internal_intrinsics_data = { 0.0 };
 
   MutableCalibCameraIntrinsics<double> internal_intrinsics (internal_intrinsics_data.data());
   internal_intrinsics.fx() = params.intrinsics_guess.fx();
