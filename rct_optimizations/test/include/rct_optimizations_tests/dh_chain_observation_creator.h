@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rct_optimizations/dh_chain.h>
+#include <rct_optimizations/dh_kinematic/dh_chain.h>
 #include <rct_optimizations/types.h>
 #include <rct_optimizations_tests/utilities.h>
 

@@ -21,7 +21,7 @@ add_library(${PROJECT_NAME} SHARED
   src/${PROJECT_NAME}/pnp.cpp
   src/${PROJECT_NAME}/multi_camera_pnp.cpp
   # DH Chain
-  src/${PROJECT_NAME}/dh_chain.cpp
+  src/${PROJECT_NAME}/dh_kinematic/dh_chain.cpp
   # Validation Tools
   src/${PROJECT_NAME}/validation/camera_intrinsic_calibration_validation.cpp
   #Noise Qualification
@@ -29,8 +29,9 @@ add_library(${PROJECT_NAME} SHARED
   #Target Homography
   src/${PROJECT_NAME}/validation/homography_validation.cpp
   # DH Chain Kinematic Calibration
-  src/${PROJECT_NAME}/dh_chain.cpp
-  src/${PROJECT_NAME}/dh_chain_kinematic_calibration.cpp
+  src/${PROJECT_NAME}/dh_kinematic/dh_chain.cpp
+  src/${PROJECT_NAME}/dh_kinematic/dual_dh_chain_2d3d.cpp
+  src/${PROJECT_NAME}/dh_kinematic/dual_dh_chain_pose3d.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -std=c++11)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)

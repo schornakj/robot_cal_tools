@@ -1,4 +1,4 @@
-#include <rct_optimizations/dh_chain_kinematic_calibration.h>
+#include <rct_optimizations/dh_kinematic/dual_dh_chain_pose.h>
 #include <rct_optimizations/local_parameterization.h>
 #include <rct_optimizations_tests/dh_chain_observation_creator.h>
 #include <rct_optimizations_tests/utilities.h>

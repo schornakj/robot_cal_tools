@@ -1,4 +1,4 @@
-#include <rct_optimizations/dh_chain.h>
+#include <rct_optimizations/dh_kinematic/dh_chain.h>
 #include <random>
 
 namespace rct_optimizations
