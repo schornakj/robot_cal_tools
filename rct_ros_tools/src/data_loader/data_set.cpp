@@ -64,7 +64,7 @@ rct_ros_tools::ExtrinsicDataSet rct_ros_tools::parseFromFile(const std::string &
   catch (const YAML::Exception& ex)
   {
     std::stringstream stream;
-    stream << "Error while parsing YAML file from path " << path << ": " << ex.what()
+    stream << "Error while parsing YAML file from path " << path << ": " << ex.what();
     throw std::runtime_error(stream.str());
   }
 }
