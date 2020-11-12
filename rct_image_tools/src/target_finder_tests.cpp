@@ -25,7 +25,7 @@ int main(int argc, char** argv)
   // Create a finder that works with this target
   rct_image_tools::ModifiedCircleGridTargetFinder target_finder(target);
 
-  // Attempt to find the grid: The optional will be set if it succeeded.
+  // Attempt to find the grid. An exception will be thrown if it fails.
   try
   {
     rct_image_tools::TargetFeatures obs = target_finder.findTargetFeatures(m);

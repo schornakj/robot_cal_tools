@@ -1,7 +1,6 @@
 #ifndef RCT_DATA_SET_H
 #define RCT_DATA_SET_H
 
-#include <boost/optional.hpp>
 #include <Eigen/Dense>
 #include <opencv2/core.hpp>
 #include <rct_optimizations/types.h>
@@ -16,7 +15,13 @@ struct ExtrinsicDataSet
   std::vector<Eigen::Isometry3d> tool_poses;
 };
 
-boost::optional<ExtrinsicDataSet> parseFromFile(const std::string& path);
+/**
+ * @brief parseFromFile
+ * @param path
+ * @return
+ * @throw std::runtime_error if the file at \ref path is not successfully loaded or parsed.
+ */
+ExtrinsicDataSet parseFromFile(const std::string& path);
 
 cv::Mat readImageOpenCV(const std::string& path);
 

@@ -69,16 +69,21 @@ int extrinsicWristCameraCalibration()
 
   // Step 3.1: Load the data set (and make sure it worked)
   const std::string data_path = ros::package::getPath("rct_examples") + "/data/test_set_10x10/cal_data.yaml";
-  boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(data_path);
-  // Attempt to load the data set via the data record yaml file:
-  if (!maybe_data_set)
+
+  ExtrinsicDataSet data_set;
+  try
   {
-    std::cerr << "Failed to parse data set from path = " << data_path << "\n";
-    return 1;
+    data_set = parseFromFile(data_path);
   }
+  catch (const std::exception& e)
+  {
+    ROS_ERROR_STREAM("Failed to parse data set from path " << data_path << ": " << e.what());
+    return 2;
+  }
+
   // Now that its loaded let's create some aliases to make this nicer
-  const std::vector<cv::Mat>& image_set = maybe_data_set->images;
-  const std::vector<Eigen::Isometry3d>& wrist_poses = maybe_data_set->tool_poses;
+  const std::vector<cv::Mat>& image_set = data_set.images;
+  const std::vector<Eigen::Isometry3d>& wrist_poses = data_set.tool_poses;
 
   // Step 3.2: We need to conver the images of calibration targets into sets of correspondences.
   // In our case, each dot on the target becomes a correspondence: A pair of positions, one for

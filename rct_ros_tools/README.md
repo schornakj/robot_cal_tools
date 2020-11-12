@@ -10,18 +10,23 @@ I wrote some very basic tools for loading/saving robot pose & image pair data se
 ```c++
 // ...
 
-// Load the data set (and make sure it worked)
+// Load the data set
 const std::string data_path = ros::package::getPath("rct_examples") + "/data/test_set_10x10/cal_data.yaml";
-boost::optional<rct_ros_tools::ExtrinsicDataSet> maybe_data_set = rct_ros_tools::parseFromFile(data_path);
+rct_ros_tools::ExtrinsicDataSet data_set;
 // Attempt to load the data set via the data record yaml file:
-if (!maybe_data_set)
+try
 {
-  std::cerr << "Failed to parse data set from path = " << data_path << "\n";
+  data_set = rct_ros_tools::parseFromFile(data_path);
+}
+catch (const std::runtime_error& e)
+{
+  std::cerr << "Failed to parse data set from path = " << data_path << ": " << e.what() << std::endl;
   return 1;
 }
+
 // Now that its loaded let's create some aliases to make this nicer
-const std::vector<cv::Mat>& image_set = maybe_data_set->images;
-const std::vector<Eigen::Affine3d>& wrist_poses = maybe_data_set->tool_poses;
+const std::vector<cv::Mat>& image_set = data_set.images;
+const std::vector<Eigen::Affine3d>& wrist_poses = data_set.tool_poses;
 
 // ...
 ```

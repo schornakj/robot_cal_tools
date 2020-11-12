@@ -101,13 +101,18 @@ int main(int argc, char** argv)
     }
 
     // Attempt to load the data set from the specified path
-    boost::optional<ExtrinsicDataSet> data_set = *parseFromFile(data_path[c]);
-    if (!data_set)
+    ExtrinsicDataSet data_set;
+    try
     {
-      ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path[c]);
+      data_set = parseFromFile(data_path[c]);
+    }
+    catch (const std::exception& e)
+    {
+      ROS_ERROR_STREAM("Failed to parse data set from path " << data_path[c] << ": " << e.what());
       return 2;
     }
-    maybe_data_set[c] = *data_set;
+
+    maybe_data_set[c] = data_set;
 
     // Load the camera intrinsics from the parameter server. Intr will get
     // reset if such a parameter was set

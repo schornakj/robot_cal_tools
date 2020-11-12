@@ -80,13 +80,16 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
-  if (!maybe_data_set)
+  ExtrinsicDataSet data_set;
+  try
   {
-    ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
+    data_set = parseFromFile(data_path);
+  }
+  catch (const std::exception& e)
+  {
+    ROS_ERROR_STREAM("Failed to parse data set from path " << data_path << ": " << e.what());
     return 2;
   }
-  auto& data_set = *maybe_data_set;
 
   try
   {

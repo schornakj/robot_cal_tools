@@ -53,7 +53,7 @@ rct_ros_tools::ExtrinsicDataSet parse(const YAML::Node& root, const std::string&
 }
 
 
-boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(const std::string &path)
+rct_ros_tools::ExtrinsicDataSet rct_ros_tools::parseFromFile(const std::string &path)
 {
   try
   {
@@ -63,8 +63,9 @@ boost::optional<rct_ros_tools::ExtrinsicDataSet> rct_ros_tools::parseFromFile(co
   }
   catch (const YAML::Exception& ex)
   {
-    ROS_ERROR_STREAM("Error while parsing YAML file: " << ex.what());
-    return {};
+    std::stringstream stream;
+    stream << "Error while parsing YAML file from path " << path << ": " << ex.what()
+    throw std::runtime_error(stream.str());
   }
 }
 

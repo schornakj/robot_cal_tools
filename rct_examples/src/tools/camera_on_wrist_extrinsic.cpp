@@ -71,14 +71,16 @@ int main(int argc, char** argv)
     CameraIntrinsics intr = loadIntrinsics(pnh, "intrinsics");
 
     // Attempt to load the data set via the data record yaml file:
-    boost::optional<ExtrinsicDataSet> maybe_data_set = parseFromFile(data_path);
-    if (!maybe_data_set)
+    ExtrinsicDataSet data_set;
+    try
     {
-      ROS_ERROR_STREAM("Failed to parse data set from path = " << data_path);
+      data_set = parseFromFile(data_path);
+    }
+    catch (const std::exception& e)
+    {
+      ROS_ERROR_STREAM("Failed to parse data set from path " << data_path << ": " << e.what());
       return 2;
     }
-    // We know it exists, so define a helpful alias
-    const ExtrinsicDataSet& data_set = *maybe_data_set;
 
     // Lets create a class that will search for the target in our raw images.
     ModifiedCircleGridTargetFinder target_finder(target);
